@@ -29,7 +29,6 @@ def handleRequest(conn, addr):
                 break
             rec_data += data
         parseRecData(rec_data, conn)
-    return
 
 def login(user, password):
     cursor = connection.cursor()
@@ -40,15 +39,15 @@ def login(user, password):
             userExists = True
             break
     if (not userExists):
-        return
+        return 1
     passwordCursor = cursor.execute("SELECT PASSWORD FROM USER_DATA WHERE USER_ID = \"{username}\"".format(username=user))
     for passW in passwordCursor:
         if (passW[0] == password):
             print("Successful login")
-            return
+            return 0
     print("Incorrect password")
     cursor.close()
-    return
+    return 2
 
 
 def register(user, password):
@@ -57,7 +56,7 @@ def register(user, password):
     for username in userList:
         if (username[0] == user):
             print("User already exists")
-            return
+            return 1
     print("Entering user into table")
     cursor.execute("INSERT INTO USER_DATA VALUES (\"{username}\", \"{password}\", NULL)".format(username=user,
                                                                                                 password=password))
@@ -66,26 +65,30 @@ def register(user, password):
     # cursor.execute("INSERT INTO FILE_DATA")
     connection.commit()
     cursor.close()
-    return
+    return 0
 
 def parseRecData(rec_data, conn):
     rec_string = rec_data.decode()
     recStringArray = rec_string.split()
     if len(recStringArray) != 3:
         # send error response: improper command
+        conn.sendall(3)
         return
     commandCode = 0
     try:
         commandCode = int(recStringArray[0])
     except ValueError:
         #send error response: improper command
+        conn.sendall(3)
         return
     if (commandCode == 0):
         #login command
-        login(recStringArray[0], recStringArray[1])
+        commandResponse = login(recStringArray[0], recStringArray[1])
+        conn.sendall(commandResponse)
     elif (commandCode == 1):
         #registration command
-        register(recStringArray[0], recStringArray[1])
+        commandResponse = register(recStringArray[0], recStringArray[1])
+        conn.sendall(commandResponse)
     return
 
 def debugMode():
