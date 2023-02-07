@@ -5,14 +5,17 @@ import typing
 # using https://docs.sqlalchemy.org/en/20/orm/quickstart.html as base
 # https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#setting-bi-directional-many-to-many
 
+
+engine = sqlalchemy.create_engine("sqlite:///test_data.db", echo=True)
+
 class Base(sqlorm.DeclarativeBase):
     pass
 
 association_table = sqlalchemy.Table(
-    "association_table",
+    "USER_GROUP_DATA",
     Base.metadata,
-    sqlalchemy.Column("left_id", sqlalchemy.ForeignKey("left_table.id"), primary_key=True),
-    sqlalchemy.Column("right_id", sqlalchemy.ForeignKey("right_table.id"), primary_key=True),
+    sqlalchemy.Column("user_id", sqlalchemy.ForeignKey("USER_DATA.user_id"), primary_key=True),
+    sqlalchemy.Column("group_id", sqlalchemy.ForeignKey("FILE_DATA.file_id"), primary_key=True),
 )
 
 class User(Base):
@@ -37,3 +40,4 @@ class File(Base):
     owner: sqlorm.Mapped[str] = sqlorm.relationship(back_populates="owned_files")
     permiited_users: sqlorm.Mapped[typing.List["User"]] = sqlorm.relationship(secondary=association_table,
                                                                               back_populates="permitted_files")
+Base.metadata.create_all(engine)
