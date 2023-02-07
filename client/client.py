@@ -77,6 +77,8 @@ class Client:
         with open(fileName, 'rb') as file:
             original = file.read()
             
+        if not original:
+            return
         # encrypting the file
         encrypted = fernet.encrypt(original)
         
@@ -96,6 +98,8 @@ class Client:
         with open(fileName, 'rb') as enc_file:
             encrypted = enc_file.read()
         
+        if (not encrypted):
+            return b''
         # decrypting the file
         decrypted = fernet.decrypt(encrypted)
         
@@ -115,6 +119,12 @@ class Client:
             case "create": 
                 print("Receive Creating File Command")
                 self.__createFile(commandArray[1])
+            case "cat":
+                print("Receive Displaying File Command")
+                self.__displayFileContents(commandArray[1])
+            case "echo":
+                print("Receive Echo Command")
+                self.__addFileContents(commandArray[1], ' '.join(commandArray[2:]))
         return
 
     def __displayFileContents(self, fileName):
@@ -126,9 +136,18 @@ class Client:
         return
 
     def __addFileContents(self, fileName, contents):
+        # print(contents)
         fernet = Fernet(self.__key)
+
+        decrypted_ = self.__DecryptFile(fileName)
+        # f = open(fileName, "r")
+        original_contents = decrypted_.decode()
+
+        # contents = original_contents + '\n' + contents
+        contents = original_contents + contents + '\n'
             
         # encrypting the file
+        # https://stackoverflow.com/questions/7585435/best-way-to-convert-string-to-bytes-in-python-3
         encrypted = fernet.encrypt(contents.encode())
         
         # opening the file in write mode and
@@ -154,8 +173,8 @@ class Client:
             commandArray_ = self.__parseCommand(command_)
             self.__dispatchCommand(commandArray_)
 
-            self.__addFileContents(commandArray_[1], "This is test")
+            # self.__addFileContents(commandArray_[1], "This is test")
 
-            self.__displayFileContents(commandArray_[1])
+            # self.__displayFileContents(commandArray_[1])
             # self.__encryptFile('test_txt.txt')
-            break
+            # break
