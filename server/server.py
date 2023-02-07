@@ -2,10 +2,19 @@ import socket
 import sqlite3
 import sys
 import os
+# import classes
+import sqlalchemy
+
+# https://docs.sqlalchemy.org/en/20/tutorial/engine.html
+# https://docs.sqlalchemy.org/en/20/orm/quickstart.html
+# https://docs.sqlalchemy.org/en/20/core/engines.html
 
 HOST = "127.0.0.1"
 PORT = 8000
-connection = sqlite3.connect("data.db")
+engine = sqlalchemy.create_engine("sqlite:///data.db", echo=True)
+connection = engine.connect()
+
+# connection = sqlite3.connect("data.db")
 
 def setupServer():
     print("Setting up server")
