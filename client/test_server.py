@@ -1,5 +1,6 @@
 import socket 
 import threading
+from cryptography.fernet import Fernet
 
 HEADER = 1024
 HOST = "127.0.0.1"
@@ -13,9 +14,11 @@ DISCONNECT_MESSAGE = "!DISCONNECT"
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
+__key = Fernet.generate_key()
+
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
-
+    # __key = Fernet.generate_key()
     connected = True
     while connected:
         msg = conn.recv(HEADER).decode()
@@ -24,10 +27,22 @@ def handle_client(conn, addr):
             # msg = conn.recv(msg_length).decode()
             # if msg == DISCONNECT_MESSAGE:
             #     connected = False
-
             print(f"[{addr}] {msg}")
-            conn.send("{} success".format(1).encode())
-
+            print(msg[0])
+            if msg[0] == '0':
+                conn.send("{} success {}".format(1, 1).encode())
+            elif msg[0] == '7':
+                file_list = "1.txt 2.txt 3.txt"
+                # key_list = __key.decode() + " " + __key.decode() + " " + __key.decode()
+                conn.send(file_list.encode())
+                # conn.send(key_list.encode())
+                print("done")
+            elif msg[0] == '8':
+                conn.send(__key)
+            
+            elif msg[0] == '4':
+                conn.send("1".encode())
+            
     conn.close()
         
 

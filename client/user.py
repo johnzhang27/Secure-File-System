@@ -5,8 +5,9 @@ class User:
     __username = ''
     __password = ''
     __group = -1
+    __file_list = {}
 
-    def __init__(self, username, password, group):
+    def __init__(self, username = '', password = '', group = -1):
         self.__username = username
         self.__password = password
         self.__group = group
@@ -29,3 +30,8 @@ class User:
 
     def getGroup(self):
         return self.__group
+
+    def getFilelist(self):
+        return self.__file_list
+    def setFilelist(self, file_list):
+        self.__file_list = file_list
