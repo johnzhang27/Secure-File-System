@@ -1,5 +1,4 @@
 import socket
-import sqlite3
 import sys
 import os
 import classes
@@ -12,7 +11,6 @@ import sqlalchemy
 HOST = "127.0.0.1"
 PORT = 8000
 engine_connection = classes.engine.connect()
-connection = sqlite3.connect("data.db")
 
 def setupServer():
     print("Setting up server")
@@ -37,56 +35,67 @@ def handleRequest(conn, addr):
             rec_data += data
         parseRecData(rec_data, conn)
 
-def login(user, password):
-    cursor = connection.cursor()
-    userList = cursor.execute("SELECT USER_ID FROM USER_DATA")
+def createGroup(groupname):
+    session = sqlalchemy.orm.Session(classes.engine)
+    groups = sqlalchemy.select(classes.Group)
+    for group in session.scalars(groups):
+        if group.group_id == groupname:
+            session.close()
+            return str(1) + " Group already exists"
+    newGroup = classes.Group(group_id=groupname)
+    session.add(newGroup)
+    session.commit()
+    session.close()
+    return str(0) + " Group successfuly registered"
+
+def login(username, password):
+    session = sqlalchemy.orm.Session(classes.engine)
+    users = sqlalchemy.select(classes.User)
     userExists = False
-    for username in userList:
-        if (username[0] == user):
+    for user in session.scalars(users):
+        if user.user_id == username:
             userExists = True
             break
-    if (not userExists):
-        return 1
-    passwordCursor = cursor.execute("SELECT PASSWORD FROM USER_DATA WHERE USER_ID = \"{username}\"".format(username=user))
-    for passW in passwordCursor:
-        if (passW[0] == password):
-            print("Successful login")
-            return 0
-    print("Incorrect password")
-    cursor.close()
-    return 2
+    if not userExists:
+        session.close()
+        return str(1) + " User does not exist"
+    passwordSt = sqlalchemy.select(classes.User.password).where(classes.User.user_id == username)
+    passwordRec = session.execute(passwordSt).first()[0]
+    if (passwordRec != password):
+        session.close()
+        return str(1) + " Password does not match"
+    session.close()
+    return 2 + " Successfully login!"
 
+def registerUser(username, password):
+    session = sqlalchemy.orm.Session(classes.engine)
+    created_user = classes.User(
+        user_id=username,
+        password=password)
 
-def register(user, password):
-    cursor = connection.cursor()
-    userList = cursor.execute("SELECT USER_ID FROM USER_DATA")
-    for username in userList:
-        if (username[0] == user):
-            print("User already exists")
-            return 1
-    print("Entering user into table")
-    cursor.execute("INSERT INTO USER_DATA VALUES (\"{username}\", \"{password}\", NULL)".format(username=user,
-                                                                                                password=password))
-    print("Entered user into table")
-    # os.mkdir("./root/" + user)
-    # cursor.execute("INSERT INTO FILE_DATA")
-    connection.commit()
-    cursor.close()
-    return 0
+    users = sqlalchemy.select(classes.User)
+    for user in session.scalars(users):
+        if user.user_id == username:
+            session.close()
+            return str(1) + " User already exists"
+    session.add(created_user)
+    session.commit()
+    session.close()
+    return str(0) + " User successfuly registered"
 
 def parseRecData(rec_data, conn):
     rec_string = rec_data.decode()
     recStringArray = rec_string.split()
     if len(recStringArray) != 3:
         # send error response: improper command
-        conn.sendall(3)
+        conn.sendall(str(3) + " Improper command")
         return
     commandCode = 0
     try:
         commandCode = int(recStringArray[0])
     except ValueError:
         #send error response: improper command
-        conn.sendall(3)
+        conn.sendall(str(3) + " Improper command")
         return
     if (commandCode == 0):
         #login command
@@ -94,7 +103,7 @@ def parseRecData(rec_data, conn):
         conn.sendall(commandResponse)
     elif (commandCode == 1):
         #registration command
-        commandResponse = register(recStringArray[0], recStringArray[1])
+        commandResponse = registerUser(recStringArray[0], recStringArray[1])
         conn.sendall(commandResponse)
     return
 
@@ -108,14 +117,21 @@ def debugMode():
             if (len(registerArray) != 2):
                 print("Invaild parameters")
             else:
-                register(registerArray[0], registerArray[1])
+                print(registerUser(registerArray[0], registerArray[1]))
         elif (testString == "login"):
             loginParameters = input("Enter mock username and password\n")
             loginArray = loginParameters.split()
             if (len(loginArray) != 2):
                 print("Invaild parameters")
             else:
-                login(loginArray[0], loginArray[1])
+                print(login(loginArray[0], loginArray[1]))
+        elif (testString == "createGroup"):
+            groupParams = input("Enter group name: \n")
+            groupArr = groupParams.split()
+            if (len(groupArr) != 1):
+                print("Invaild parameters")
+            else:
+                print(createGroup(groupArr[0]))
         elif (testString == "EXIT"):
             break
         else:
@@ -144,4 +160,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    connection.close()
+    engine_connection.close()
