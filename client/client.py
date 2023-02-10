@@ -43,7 +43,7 @@ class Client:
 
         # wait for response
         res_ = self.__s.recv(2048).decode()
-        print(res_)
+        # print(res_)
         # parse message
         ack_, errorMsg_, group_id = self.__parseMsg(res_)
         
@@ -74,29 +74,49 @@ class Client:
         # for 'create' command
         print("Start Creating File...")
         try:
+            tmp_key_ = Fernet.generate_key()
+            # 9 for new key (new file)
+            # 9 #FILENAME #ENCRYPTIONKEY #FULLPATH
+            # current_dir = os.getcwd()
+            # # full_path = os.path.join(current_dir, fileName)
+            # tmp_string = "9 {} {} {}".format(fileName, tmp_key_, current_dir)
+            # self.__s.send(tmp_string.encode())
+
             f = open(fileName, "x")
-            new_fileName = self.__encryptFileName(fileName)
-            self.__encryptFile(new_fileName)
-            self.__look_up_table[fileName] = new_fileName
+            encrypted_fileName = self.__encryptFileName(fileName, tmp_key_)
+            self.__encryptFile(encrypted_fileName, tmp_key_)
+
+
+            current_dir = os.getcwd()
+            # full_path = os.path.join(current_dir, fileName)
+            tmp_string = "9 {} {} {}".format(encrypted_fileName.decode(), tmp_key_.decode(), current_dir)
+            self.__s.send(tmp_string.encode())
+
+            # current_dir = os.getcwd()
+            # # full_path = os.path.join(current_dir, new_fileName)
+            # tmp_string = "9 {} {} {}".format(new_fileName, tmp_key_, current_dir)
+            # self.__s.send(tmp_string.encode())
+
+            self.__look_up_table[(fileName, current_dir)] = encrypted_fileName.decode()
+
         except Exception as err:
             print ("Error: %s %s" %(fileName, err))
+
+        # print(self.__look_up_table)
         return
 
-    def __encryptFile(self, fileName):
+    def __encryptFile(self, fileName, key):
         print("Start File Encryption...")
-        # key = Fernet.generate_key()
-        # self.__key = key
-        #TODO send encyption key to server
 
-        tmp_key_ = self.__requestKey(fileName)
-        if not tmp_key_:
-            tmp_key_ = Fernet.generate_key()
-            # 9 for new key (file contents)
-            tmp_string = "9 {} {}".format(fileName, tmp_key_)
+        # tmp_key_ = self.__requestKey(fileName)
+        # if not tmp_key_:
+        #     tmp_key_ = Fernet.generate_key()
+        #     # 9 for new key (file contents)
+        #     # 9 #FILENAME #ENCRYPTIONKEY
+        #     tmp_string = "9 {} {}".format(fileName, tmp_key_)
+        #     self.__s.send(tmp_string.encode())
 
-            # send login request to server
-            self.__s.send(tmp_string.encode())
-        fernet = Fernet(tmp_key_)
+        fernet = Fernet(key)
         # opening the original file to encrypt
         with open(fileName, 'rb') as file:
             original = file.read()
@@ -113,55 +133,62 @@ class Client:
         return
 
     # this should only be called when creating new file
-    def __encryptFileName(self, fileName):
+    def __encryptFileName(self, fileName, key):
         print("Start File Name Encryption...")
         # key = Fernet.generate_key()
         # self.__key = key
         #TODO send encyption key to server
 
-        tmp_key_ = self.__requestKey(fileName)
-        if not tmp_key_:
-            tmp_key_ = Fernet.generate_key()
-            # 9 for new key (filename)
-            tmp_string = "10 {} {}".format(fileName, tmp_key_)
+        # tmp_key_ = self.__requestKey(fileName)
+        # if not tmp_key_:
+        #     tmp_key_ = Fernet.generate_key()
+        #     # 10 #FILENAME #ENCRYPTIONKEY
+        #     tmp_string = "10 {} {}".format(fileName, tmp_key_)
 
-            # send login request to server
-            self.__s.send(tmp_string.encode())
+        #     # send login request to server
+        #     self.__s.send(tmp_string.encode())
 
-        fernet = Fernet(tmp_key_)
+        fernet = Fernet(key)
         # encrypting the file name
         encrypted = fernet.encrypt(fileName.encode())
         
         # opening the file in write mode and
         # writing the encrypted data
         os.rename(fileName, encrypted)
-        print("I'm here")
         return encrypted
 
-    def __requestKey(self, fileName):
+    def __requestKey(self, fileName, fullPath):
         #TODO send request to server ask for a list of files
-        tmp_string = "8 {}".format(fileName)
+        # 8 #FILENAME #FULLPATH
+        # current_dir = os.getcwd()
+        # full_path = os.path.join(current_dir, fileName)
+        tmp_string = "8 {} {}".format(fileName, fullPath)
 
         # send login request to server
         self.__s.send(tmp_string.encode())
 
         # wait for response
+        print("request key")
         key_ = self.__s.recv(2048).decode()
-        print(key_)
+        # print(key_)
 
         return key_  
 
-    def __DecryptFile(self, fileName):
-        tmp_key_ = self.__requestKey(fileName)
+    def __DecryptFile(self, encrypted_fileName, fullPath):
 
-        if not tmp_key_:
+        # fileName = self.__look_up_table[(encrypted_fileName,fullPath)]
+
+        tmp_key_ = self.__requestKey(encrypted_fileName, fullPath)
+
+        if not tmp_key_ or tmp_key_ == '0':
             print("The file doesn't exist in databse, please make sure you create the file using this SFS")
         # using the key
         fernet = Fernet(tmp_key_)
         decrypted = b''
         try:
+            
             # opening the encrypted file
-            with open(fileName, 'rb') as enc_file:
+            with open(os.path.join(fullPath, encrypted_fileName), 'rb') as enc_file:
                 encrypted = enc_file.read()
             
             if (not encrypted):
@@ -169,7 +196,7 @@ class Client:
             # decrypting the file
             decrypted = fernet.decrypt(encrypted)
         except Exception as err:
-            print ("Error: Your file %s has been modified or removed %s" %(fileName, err))
+            print ("Error: Your file has been modified or removed %s" %(err))
 
         
         # # opening the file in write mode and
@@ -178,18 +205,20 @@ class Client:
         #     dec_file.write(decrypted)
         return decrypted
 
-    def __DecryptFileName(self, fileName):
-        tmp_key_ = self.__requestKey(fileName)
+    def __DecryptFileName(self, encrypted_fileName, fullPath):
 
-        if not tmp_key_:
+        # fileName = self.__look_up_table[(encrypted_fileName,fullPath)]
+        tmp_key_ = self.__requestKey(encrypted_fileName, fullPath)
+
+        if not tmp_key_ or tmp_key_ == '0':
             print("The file doesn't exist in databse, please make sure you create the file using this SFS")
         # using the key
         fernet = Fernet(tmp_key_)
         decrypted = b''
         try:
-            decrypted = fernet.decrypt(fileName)
+            decrypted = fernet.decrypt(encrypted_fileName)
         except Exception as err:
-            print ("Error: Your file %s has been modified or removed %s" %(fileName, err))
+            print ("Error: Your fileName has been modified or removed %s" %(err))
 
         return decrypted
 
@@ -198,23 +227,31 @@ class Client:
         return tmp_array
 
     def __displayFileContents(self, fileName):
-        tmp_fileName = self.__look_up_table[fileName]
+        current_dir = os.getcwd()
+        # full_path = os.path.join(current_dir, fileName)
+        # print(fileName)
+        # print(full_path)
+        encrypted_fileName = self.__look_up_table[(fileName, current_dir)]
+        # print(tmp_fileName)
         # TODO this is for cat command
-        decrypted_ = self.__DecryptFile(tmp_fileName)
+        decrypted_ = self.__DecryptFile(encrypted_fileName, current_dir)
         # f = open(fileName, "r")
         print(decrypted_.decode())
 
         return
 
     def __addFileContents(self, fileName, contents):
-        tmp_fileName = self.__look_up_table[fileName]
+        current_dir = os.getcwd()
+        # full_path = os.path.join(current_dir, fileName)
+        encrypted_fileName = self.__look_up_table[(fileName, current_dir)]
         # print(contents)
-        tmp_key_ = self.__requestKey(tmp_fileName)
+        tmp_key_ = self.__requestKey(encrypted_fileName, current_dir)
         if not tmp_key_:
             print("The file doesn't exist in databse, please make sure you create the file using this SFS")
+            return
         fernet = Fernet(tmp_key_)
 
-        decrypted_ = self.__DecryptFile(tmp_fileName)
+        decrypted_ = self.__DecryptFile(encrypted_fileName, current_dir)
         # f = open(fileName, "r")
         original_contents = decrypted_.decode()
 
@@ -227,7 +264,7 @@ class Client:
         
         # opening the file in write mode and
         # writing the encrypted data
-        with open(tmp_fileName, 'wb') as encrypted_file:
+        with open(encrypted_fileName, 'wb') as encrypted_file:
             encrypted_file.write(encrypted)
         return
 
@@ -238,8 +275,8 @@ class Client:
             data = ff.read()    
             integrity_content = hashlib.md5(data).hexdigest()
 
-        print(integrity_filename)
-        print(integrity_content)
+        # print(integrity_filename)
+        # print(integrity_content)
         return integrity_filename, integrity_content
     
     def __verifyIntegrityCode(self, filename, integrity_filename, integrity_content):
@@ -253,6 +290,7 @@ class Client:
 
 
     def __createDirectory(self, directoryName):
+        #TODO might change the structure later.
         try: 
             os.mkdir(directoryName)
         except OSError as error: 
@@ -262,6 +300,7 @@ class Client:
         tmp_string = "5 {} {} {}".format(self.__user.getUsername(), self.__user.getGroup(), full_path)
 
         # send login request to server
+        # 5 #USERNAME #GROUPID #DIRECTORYPATH
         self.__s.send(tmp_string.encode())
 
     def __changeDirectory(self, directoryName):
@@ -278,6 +317,8 @@ class Client:
                 tmp_string = "4 {} {} {}".format(self.__user.getUsername(), self.__user.getGroup(), full_path)
 
                 # send login request to server
+                # 4 #USERNAME #GROUPID #DIRECTORYPATH
+                # RES: 1 or 0
                 self.__s.send(tmp_string.encode())
                 ans_ = self.__s.recv(2048).decode()
                 print("change directory %s", ans_)
@@ -288,33 +329,62 @@ class Client:
             except OSError as error: 
                 print(error)
 
+    # list all files and directories in current directory
     def __listDir(self):
+        # get the list using os command
         tmp_list = os.listdir()
+        current_dir = os.getcwd()
+        # since all files are encrypted so we have decrypted them
         for ele in tmp_list:
-            if not os.path.isdir(ele):
-                tmp_fileName = self.__DecryptFileName(ele)
+            # full_path = os.path.join(current_dir, ele)
+            # print(full_path)
+            # print(ele)
+            if not os.path.isdir(ele) and ele in self.__look_up_table.values():
+
+                tmp_fileName = self.__DecryptFileName(ele, current_dir)
                 print(tmp_fileName.decode())
             else:
                 print(ele)
         # print(*os.listdir(), sep='\n')
 
+    # display current directory
     def __showCurrentDirectory(self):
         print(os.getcwd())
 
+
+    # get a list of files that belongs to the current user or the user has permission to access it
     def __getFileList(self, username):
         #TODO send request to server ask for a list of files
         tmp_string = "7 {}".format(username)
 
         # send login request to server
+        # 7 #USERNAME
         self.__s.send(tmp_string.encode())
 
         # wait for response
         file_list_ = self.__s.recv(2048).decode()
         # key_list_ = self.__s.recv(2048).decode()
-        print(file_list_)
+        # print(file_list_)
 
         return file_list_
 
+    # get a list of files that belongs to the current user or the user has permission to access it
+    def __getFullPathList(self, username):
+        #TODO send request to server ask for a list of files
+        tmp_string = "6 {}".format(username)
+
+        # send login request to server
+        # 7 #USERNAME
+        self.__s.send(tmp_string.encode())
+
+        # wait for response
+        full_path_list_ = self.__s.recv(2048).decode()
+        # key_list_ = self.__s.recv(2048).decode()
+        # print(full_path_list_)
+
+        return full_path_list_
+
+    # command dispatcher
     def __dispatchCommand(self, commandArray):
         match commandArray[0]:
             case "create": 
@@ -352,6 +422,11 @@ class Client:
         return 1
 
 
+
+
+
+
+    # Start the client
     def start(self):
 
         U = User()
@@ -375,19 +450,30 @@ class Client:
 
         # TODO after the user login, we need to check to see if any file is modified outside the SFS
         file_list_ = self.__getFileList(U.getUsername())
-        tmp_file_list_ = self.__parseCommand(file_list_)
+        full_path_list_ = self.__getFullPathList(U.getUsername())
 
-        U.setFilelist(tmp_file_list_)
+        if file_list_ != '0':
+            tmp_file_list_ = self.__parseCommand(file_list_)
+            tmp_full_path_list_ = self.__parseCommand(full_path_list_)
 
-        print(self.__user.getFilelist()) 
+            # They have to be in same order
+            U.setFilelist(tmp_file_list_)
+            U.setPathlist(tmp_full_path_list_)
 
-        #TODO iterate over the file list and decrypt every single file, if the file is modified, raise an error message
+            # print(self.__user.getFilelist()) 
 
-        for file in self.__user.getFilelist():
-            # if we can't decrypt the file then it means someone has modified the content.
-            self.__DecryptFile(file)
-            tmp_real_name = self.__DecryptFileName(file)
-            self.__look_up_table[tmp_real_name] = file
+            #TODO iterate over the file list and decrypt every single file, if the file is modified, raise an error message
+
+            for (file, path) in zip(self.__user.getFilelist(), self.__user.getPathlist()):
+                # if we can't decrypt the file then it means someone has modified the content.
+                # print("I'm here")
+
+                self.__DecryptFile(file, path)
+                # print("I'm here2")
+                tmp_real_name = self.__DecryptFileName(file, path)
+                
+                self.__look_up_table[(tmp_real_name.decode(), path)] = file
+            print(self.__look_up_table)
 
         while(1):
             command_ = input("Please Enter Command (Enter 'help' to show a list of available commands): ")
