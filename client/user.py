@@ -8,6 +8,7 @@ class User:
     __file_list = []
     __path_list = []
     __key_list = []
+    __unique_key = ''
 
     def __init__(self, username = '', password = '', group = -1):
         self.__username = username
