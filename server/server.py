@@ -1,7 +1,7 @@
 import socket
 import sys
 import os
-import classes
+import database_manager
 import sqlalchemy
 
 # https://docs.sqlalchemy.org/en/20/tutorial/engine.html
@@ -10,7 +10,9 @@ import sqlalchemy
 
 HOST = "127.0.0.1"
 PORT = 8000
-engine_connection = classes.engine.connect()
+db = database_manager.DatabaseManager()
+current_user = None
+current_directory = ""
 
 def setupServer():
     print("Setting up server")
@@ -36,66 +38,58 @@ def handleRequest(conn, addr):
         parseRecData(rec_data, conn)
 
 def createGroup(groupname):
-    session = sqlalchemy.orm.Session(classes.engine)
-    groups = sqlalchemy.select(classes.Group)
-    for group in session.scalars(groups):
-        if group.group_id == groupname:
-            session.close()
-            return str(1) + " Group already exists"
-    newGroup = classes.Group(group_id=groupname)
-    session.add(newGroup)
-    session.commit()
-    session.close()
-    return str(0) + " Group successfuly registered"
+    if db.check_group_exists(groupname) != None:
+        return "Group already exists"
+    db.create_group_in_database(groupname)
+    return "Group successfuly registered"
 
 def login(username, password):
-    session = sqlalchemy.orm.Session(classes.engine)
-    users = sqlalchemy.select(classes.User)
-    userExists = False
-    for user in session.scalars(users):
-        if user.user_id == username:
-            userExists = True
-            break
-    if not userExists:
-        session.close()
-        return str(1) + " User does not exist"
-    passwordSt = sqlalchemy.select(classes.User.password).where(classes.User.user_id == username)
-    passwordRec = session.execute(passwordSt).first()[0]
-    if (passwordRec != password):
-        session.close()
-        return str(1) + " Password does not match"
-    session.close()
-    return 2 + " Successfully login!"
+    global current_user
+    user_obj = db.check_user_exists(username)
+    if user_obj == None:
+        return "User does not exist"
+    if not db.login_in_user(username, password):
+        return "Password does not match"
+    print(user_obj)
+    current_user = user_obj
+    return "Successfully login!"
 
 def registerUser(username, password):
-    session = sqlalchemy.orm.Session(classes.engine)
-    created_user = classes.User(
-        user_id=username,
-        password=password)
+    if (db.check_user_exists(username) != None):
+        return "User already exists"
+    db.register_user_in_database(username, password)
 
-    users = sqlalchemy.select(classes.User)
-    for user in session.scalars(users):
-        if user.user_id == username:
-            session.close()
-            return str(1) + " User already exists"
-    session.add(created_user)
-    session.commit()
-    session.close()
-    return str(0) + " User successfuly registered"
+def addUserToGroup(username, groupname):
+    user = db.check_user_exists(username)
+    group = db.check_group_exists(groupname)
+    if user == None:
+        return "Specified user does not exist"
+    if group == None:
+        return "Specified group does not exist"
+    db.add_user_to_group(user, group)
+
+def createFile(path, filename):
+    if (db.check_file_exists(current_directory + path) != None):
+        return "File already exists, cannot create"
+    current_dir = db.check_file_exists(current_directory)
+    if (not db.check_file_permissions(current_dir, current_user)):
+        return "Do not have permission to create files in this directory"
+    db.create_dir(abspath, filename, current_user)
+    return "File created!"
 
 def parseRecData(rec_data, conn):
     rec_string = rec_data.decode()
     recStringArray = rec_string.split()
     if len(recStringArray) != 3:
         # send error response: improper command
-        conn.sendall(str(3) + " Improper command")
+        conn.sendall("Improper command")
         return
     commandCode = 0
     try:
         commandCode = int(recStringArray[0])
     except ValueError:
         #send error response: improper command
-        conn.sendall(str(3) + " Improper command")
+        conn.sendall("Improper command")
         return
     if (commandCode == 0):
         #login command
@@ -132,12 +126,26 @@ def debugMode():
                 print("Invaild parameters")
             else:
                 print(createGroup(groupArr[0]))
+        elif (testString == "addToGroup"):
+            addParams = input("Enter user and group: \n")
+            addArr = addParams.split()
+            if (len(addArr) != 2):
+                print("Invaild parameters")
+            else:
+                print(addUserToGroup(addArr[0], addArr[1]))
+        elif (testString == "createFile"):
+            createParams = input("Enter path and name: \n")
+            createArr = createParams.split()
+            if (len(createArr) != 2):
+                print("Invaild parameters")
+            else:
+                print(createFile(createArr[0], createArr[1]))
         elif (testString == "EXIT"):
+            db.close_session()
             break
         else:
             continue
     return
-
 
 def main():
     if (len(sys.argv) > 2):
@@ -157,7 +165,5 @@ def main():
         except:
             print("Exception!")
    
-
 if __name__ == "__main__":
     main()
-    engine_connection.close()

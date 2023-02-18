@@ -3,15 +3,16 @@ import sqlalchemy.orm as sqlorm
 import typing
 
 # https://www.tutorialspoint.com/sqlalchemy/
+# https://auth0.com/blog/sqlalchemy-orm-tutorial-for-python-developers/
+# https://towardsdatascience.com/sqlalchemy-python-tutorial-79a577141a91#:~:text=SQLAlchemy%20can%20be%20used%20to,metadata%20based%20on%20that%20information.
 
-engine = sqlalchemy.create_engine("sqlite:///test_data.db", echo=True)
 Base = sqlorm.declarative_base()
 
 association_table = sqlalchemy.Table(
-    "USER_GROUP_DATA",
+    "USER_FILE_DATA",
     Base.metadata,
     sqlalchemy.Column("user_id", sqlalchemy.ForeignKey("USER_DATA.user_id"), primary_key=True),
-    sqlalchemy.Column("group_id", sqlalchemy.ForeignKey("FILE_DATA.file_id"), primary_key=True),
+    sqlalchemy.Column("abs_path", sqlalchemy.ForeignKey("FILE_DATA.abs_path"), primary_key=True),
 )
 
 class User(Base):
@@ -31,12 +32,11 @@ class Group(Base):
 
 class File(Base):
     __tablename__ = "FILE_DATA"
-    file_id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
-    parent_file = sqlalchemy.Column(sqlalchemy.String)
+    abs_path = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     file_name = sqlalchemy.Column(sqlalchemy.String)
+    hash = sqlalchemy.Column(sqlalchemy.String)
     owner_id = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("USER_DATA.user_id"))
     owner = sqlorm.relationship("User", back_populates="owned_files")
     permitted_users = sqlorm.relationship("User",
                                           secondary=association_table,
                                           back_populates="permitted_files")
-Base.metadata.create_all(engine)
