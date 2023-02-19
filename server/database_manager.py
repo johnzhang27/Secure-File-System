@@ -83,6 +83,12 @@ class DatabaseManager:
         user.owned_files.append(file)
         self.session.commit()
 
+    def rename_file(self, file, abspath, filename):
+        file.abs_path = abspath
+        file.file_name = filename
+        self.session.commit()
+
+
     def edit_file(self, file, abspath, filename, file_hash=""):
         file.abs_path = abspath
         file.file_name = filename
@@ -112,19 +118,27 @@ class DatabaseManager:
 
     def grant_permissions(self, file, requesting_user):
         if (file.owner == requesting_user or requesting_user in file.permitted_users):
-            return
+            return False
         file.permitted_users.append(requesting_user)
         self.session.commit()
+        return True
 
     def remove_permissions(self, file, requesting_user):
-        if (file.owner == requesting_user or requesting_user not in file.permitted_users):
-            return
+        if (file.owner == requesting_user):
+            return (False, "Cannot remove permission from owner")
+        if (requesting_user not in file.permitted_users):
+            return (False, "Specified user does not have permission to that file!")
         file.permitted_users.remove(requesting_user)
         self.session.commit()
+        return (True, "Success")
 
-    def generate_permitted_lookup_table(self, user):
+    def generate_owned_lookup_table(self, user):
         lookup_table = {}
         lookup_table = self.add_to_lookup_table(user.owned_files, lookup_table)
+        return lookup_table
+
+    def generate_permitted_lookup_table(self, user):
+        lookup_table = self.generate_owned_lookup_table(user)
         lookup_table = self.add_to_lookup_table(user.permitted_files, lookup_table)
         return lookup_table
 
