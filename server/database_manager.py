@@ -59,9 +59,12 @@ class DatabaseManager:
         group.users.append(user)
         self.session.commit()
 
-    def create_file(self, abspath, filename, user):
+    def create_file(self, abspath, filename, file_key, user, is_dir, file_hash=""):
         file = database_models.File(abs_path=abspath, 
-                                    file_name=filename)
+                                    file_name=filename,
+                                    key=file_key,
+                                    hash=file_hash,
+                                    is_dir=is_dir)
         user.owned_files.append(file)
         self.session.commit()
 
@@ -91,6 +94,24 @@ class DatabaseManager:
             return None
         file.permitted_users.append(requesting_user)
 
+    def generate_permitted_lookup_table(self, user):
+        lookup_table = {}
+        lookup_table = self.add_to_lookup_table(user.owned_files, lookup_table)
+        lookup_table = self.add_to_lookup_table(user.permitted_files, lookup_table)
+        return lookup_table
+
+    def generate_group_permitted_lookup_table(self, user):
+        lookup_table = self.generate_permitted_lookup_table(self, user)
+        for group_mem in user.group.users:
+            lookup_table = self.add_to_lookup_table(group_mem.owned_files, lookup_table)
+        return lookup_table
+
+    def add_to_lookup_table(self, file_list, lookup_table):
+        for file in file_list:
+            if file.abs_path in lookup_table:
+                continue
+            lookup_table[file.abs_path] = (file.file_name, file.key)
+        return lookup_table
     
 
 
