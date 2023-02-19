@@ -28,6 +28,9 @@ class DatabaseManager:
         self.session.add(created_user)
         self.session.commit()
 
+    def remove_user_in_database(self, username, password):
+        return
+
     def check_user_exists(self, username):
         users = sqlalchemy.select(database_models.User)
         for user in self.session.scalars(users):
@@ -48,6 +51,9 @@ class DatabaseManager:
         self.session.add(newGroup)
         self.session.commit()
 
+    def remove_group_from_database(self, group):
+        return
+
     def check_group_exists(self, groupname):
         groups = sqlalchemy.select(database_models.Group)
         for group in self.session.scalars(groups):
@@ -56,9 +62,18 @@ class DatabaseManager:
         return None
 
     def add_user_to_group(self, user, group):
+        if user in group.users:
+            return
         group.users.append(user)
         self.session.commit()
 
+    def remove_user_from_group(self, user, group):
+        if user not in group.users:
+            return
+        group.users.remove(user)
+        self.session.commit()
+
+   
     def create_file(self, abspath, filename, file_key, user, is_dir, file_hash=""):
         file = database_models.File(abs_path=abspath, 
                                     file_name=filename,
@@ -66,6 +81,12 @@ class DatabaseManager:
                                     hash=file_hash,
                                     is_dir=is_dir)
         user.owned_files.append(file)
+        self.session.commit()
+
+    def edit_file(self, file, abspath, filename, file_hash=""):
+        file.abs_path = abspath
+        file.file_name = filename
+        file.hash = file_hash
         self.session.commit()
 
     def check_file_exists(self, abspath):
@@ -90,9 +111,16 @@ class DatabaseManager:
             return False
 
     def grant_permissions(self, file, requesting_user):
-        if (file.owner == requesting_user or requesting_user not in file.permitted_users):
-            return None
+        if (file.owner == requesting_user or requesting_user in file.permitted_users):
+            return
         file.permitted_users.append(requesting_user)
+        self.session.commit()
+
+    def remove_permissions(self, file, requesting_user):
+        if (file.owner == requesting_user or requesting_user not in file.permitted_users):
+            return
+        file.permitted_users.remove(requesting_user)
+        self.session.commit()
 
     def generate_permitted_lookup_table(self, user):
         lookup_table = {}

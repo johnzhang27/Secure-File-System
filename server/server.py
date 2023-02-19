@@ -9,6 +9,33 @@ import sqlalchemy
 # https://docs.sqlalchemy.org/en/20/orm/quickstart.html
 # https://docs.sqlalchemy.org/en/20/core/engines.html
 
+class Server:
+
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.socket = None
+        self.db = database_manager.DatabaseManager()
+        self.file_manager = file_manager.FileManager()
+        self.current_user = None
+
+    def start_server(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((self.host, self.port))
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.listen()
+        while True: 
+            conn, addr = self.socket.accept()
+            self.handle_request(conn)
+
+    def close_server(self);
+        self.socket.close()
+        self.db.close_session()
+
+    def handle_request(self, conn):
+        return
+
+
 HOST = "127.0.0.1"
 PORT = 8000
 db = database_manager.DatabaseManager()
@@ -110,8 +137,9 @@ def createDirectory(directoryname):
     db.create_file(outputparams[2], outputparams[0], outputparams[3], current_user, True)
     return "Directory created!"
 
-# TO DO: ask how to handle change directory
 def changeDirectory(directoryname):
+    if (directoryname == "../"):
+        file_manager.changeDirectory(directoryname)
     abs_path = os.path.join(file_manager.current_path, directoryname)
     fileExists = False
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
@@ -135,7 +163,7 @@ def changeDirectory(directoryname):
     dirObj = db.check_file_exists(enc_abs_path)
     if (not dirObj.is_dir):
         return "Requested directory is not a directory"
-    file_manager.changeDirectory()
+    file_manager.changeDirectory(directoryname)
     
 def displayContents(filename):
     abs_path = os.path.join(file_manager.current_path, filename)
@@ -161,8 +189,36 @@ def displayContents(filename):
     if (not havePermission):
         return "Do not have permission to do that command"
     return file_manager.displayFileContents(filename, lookup_table)
-    
 
+def displayDirectoryContent():
+    return
+
+def displayDirectories():
+    return
+
+def editFile():
+    return
+
+def grantPermission():
+    return
+
+def removePermission():
+    return
+
+def renameFile():
+    return
+
+def checkIntergityOfFiles(self):
+    if current_user == None:
+        return None
+    comprised_files = []
+    for file in current_user.owned_files:
+        # TO DO: compute file hash
+        hash = ""
+        # compare to hash stored in DB
+        hash == file.hash
+    return comprised_files
+    
 def parseRecData(rec_data, conn):
     rec_string = rec_data.decode()
     recStringArray = rec_string.split()
