@@ -7,7 +7,7 @@ import database_models
 class DatabaseManager:
     
     def __init__(self):
-        self.engine = sqlalchemy.create_engine("sqlite:///test_data.db", echo=True)
+        self.engine = sqlalchemy.create_engine("sqlite:///test_data.db")
         self.session = sqlalchemy.orm.Session(self.engine)
 
     def create_tables(self):
@@ -27,6 +27,7 @@ class DatabaseManager:
             password=password)
         self.session.add(created_user)
         self.session.commit()
+        return created_user
 
     def remove_user_in_database(self, username, password):
         return

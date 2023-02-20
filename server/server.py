@@ -33,7 +33,7 @@ class Server:
             conn, addr = self.socket.accept()
             self.handle_request(conn)
 
-    def close_server(self);
+    def close_server(self):
         self.socket.close()
         self.db.close_session()
 
@@ -128,6 +128,8 @@ class Server:
             return
 
     def login(self, username, password):
+        if self.current_user != None:
+            return "Already logged in"
         user_obj = self.db.check_user_exists(username)
         if user_obj == None:
             return "User does not exist"
@@ -139,10 +141,15 @@ class Server:
     def registerUser(self, username, password):
         if (self.db.check_user_exists(username) != None):
             return "User already exists"
-        self.db.register_user_in_database(username, password)
+        userObj = self.db.register_user_in_database(username, password)
+        # Creating home dir for user
+        outparams = self.file_manager.createDirectory(username)
+        self.db.create_file(outparams[2], outparams[0], outparams[3], userObj, True)
         return "User registered!"
 
     def createFile(self, filename):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
@@ -164,6 +171,8 @@ class Server:
         return "File created!"
 
     def displayContents(self, filename):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         abs_path = os.path.join(self.file_manager.current_path, filename)
         fileExists = False
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
@@ -190,6 +199,8 @@ class Server:
 
     
     def editFile(self, filename, contents):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         abs_path = os.path.join(self.file_manager.current_path, filename)
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
         lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
@@ -217,6 +228,8 @@ class Server:
 
     
     def createDirectory(self, directoryname):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
@@ -233,10 +246,12 @@ class Server:
         if (not havePermission):
             return "Do not have permission to do that command"
         outputparams = self.file_manager.createDirectory(directoryname)
-        db.create_file(outputparams[2], outputparams[0], outputparams[3], self.current_user, True)
+        self.db.create_file(outputparams[2], outputparams[0], outputparams[3], self.current_user, True)
         return "Directory created!"
 
     def changeDirectory(self, directoryname):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         if (directoryname == "../"):
             self.file_manager.changeDirectory(directoryname)
         abs_path = os.path.join(self.file_manager.current_path, directoryname)
@@ -266,6 +281,8 @@ class Server:
         return self.file_manager.relative_path
 
     def displayDirectoryContent(self):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
         havePermission = False
         for enc_path in group_lookup_table:
@@ -279,6 +296,8 @@ class Server:
         return self.file_manager.listDir(group_lookup_table)
 
     def renameFile(self, old_file_name, new_file_name):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         abs_path = os.path.join(self,file_manager.current_path, old_file_name)
         fileExists = False
         lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
@@ -301,12 +320,14 @@ class Server:
         if (not havePermission):
             return "Do not have permission to do that command"
         outparams = self.file_manager.renameFile_public(old_file_name, lookup_table, new_file_name)
-        fileObj = db.check_file_exists(outparams[3])
+        fileObj = self.db.check_file_exists(outparams[3])
         self.db.rename_file(fileObj, outparams[2], outparams[0])
         return "File " + old_file_name + "renamed to " + new_file_name
 
         
     def grantPermission(self, username, filename):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         userObj = self.db.check_user_exists(username)
         if (userObj == None):
             return "Specified user does not exist"
@@ -336,12 +357,14 @@ class Server:
         return "Permission granted!"
 
     def removePermission(self, username, filename):
+        if self.current_user == None:
+            return "Must be logged in to run command!"
         userObj = self.db.check_user_exists(username)
         if (userObj == None):
             return "Specified user does not exist"
         abs_path = os.path.join(self.file_manager.current_path, filename)
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
-        lookup_table = self.db.generate_owned_lookup_table(current_user)
+        lookup_table = self.db.generate_owned_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
             dec_file = self.file_manager.DecryptFileName(enc_file[0], enc_file[1])
@@ -375,6 +398,10 @@ class Server:
             # compare to hash stored in DB
             hash == file.hash
         return comprised_files
+
+    def logout(self):
+        self.current_user = None
+        return "Logged out"
 
 def main():
     server = Server(HOST, PORT)
