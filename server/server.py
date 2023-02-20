@@ -418,13 +418,16 @@ class Server:
     def checkIntergityOfFiles(self):
         if self.current_user == None:
             return None
-        comprised_files = []
-        for file in self.current_user.owned_files:
-            # TO DO: compute file hash
-            hash = ""
-            # compare to hash stored in DB
-            hash == file.hash
-        return comprised_files
+        lookup_table = self.db.generate_owned_lookup_table(self.current_user)
+        comprisedFiles = []
+        for enc_path in lookup_table:
+            fileObj = self.db.check_file_exists(enc_path)
+            if (fileObj.is_dir):
+                continue
+            dec_path = file_manager.DecryptFile(enc_path, lookup_table[enc_path][0])
+            if (not file_manager.verifyIntegrityCode(dec_path, fileObj.file_name_hash, fileObj.file_hash)):
+                comprisedFiles.append(fileObj)
+        return comprisedFiles
 
     def logout(self):
         self.current_user = None

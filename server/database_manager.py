@@ -75,11 +75,12 @@ class DatabaseManager:
         self.session.commit()
 
    
-    def create_file(self, abspath, filename, file_key, user, is_dir, file_hash=""):
+    def create_file(self, abspath, filename, file_key, user, is_dir, file_name_hash="", file_hash=""):
         file = database_models.File(abs_path=abspath, 
                                     file_name=filename,
                                     key=file_key,
-                                    hash=file_hash,
+                                    file_name_hash=file_name_hash,
+                                    file_hash=file_hash,
                                     is_dir=is_dir)
         user.owned_files.append(file)
         self.session.commit()
@@ -90,10 +91,11 @@ class DatabaseManager:
         self.session.commit()
 
 
-    def edit_file(self, file, abspath, filename, file_hash=""):
+    def edit_file(self, file, abspath, filename, file_name_hash="", file_hash=""):
         file.abs_path = abspath
         file.file_name = filename
-        file.hash = file_hash
+        file.file_name_hash = file_name_hash
+        file.file_hash = file_hash
         self.session.commit()
 
     def check_file_exists(self, abspath):

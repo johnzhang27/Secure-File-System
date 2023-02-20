@@ -34,7 +34,8 @@ class File(Base):
     __tablename__ = "FILE_DATA"
     abs_path = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
     file_name = sqlalchemy.Column(sqlalchemy.String)
-    hash = sqlalchemy.Column(sqlalchemy.String)
+    file_hash = sqlalchemy.Column(sqlalchemy.String)
+    file_name_hash = sqlalchemy.Column(sqlalchemy.String)
     key = sqlalchemy.Column(sqlalchemy.String)
     is_dir = sqlalchemy.Column(sqlalchemy.Boolean)
     owner_id = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("USER_DATA.user_id"))
