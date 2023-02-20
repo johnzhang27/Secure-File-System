@@ -233,7 +233,7 @@ def changeDirectory(directoryname):
     enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
     print("File list: " + str(enc_file_list))
     for enc_file in enc_file_list:
-        dec_file = file_manager.DecryptFileName(enc_file[1], bytearray(enc_file[0]))
+        dec_file = file_manager.DecryptFileName(enc_file[1], bytearray(enc_file[0], 'utf-8'))
         if dec_file == directoryname:
             fileExists = True
             break
@@ -241,7 +241,7 @@ def changeDirectory(directoryname):
         return "Directory does not exist in current directory"
     havePermission = False
     for enc_path in group_lookup_table:
-        dec_path = file_manager.DecryptFileName(enc_path, bytearray(group_lookup_table[enc_path][0]))
+        dec_path = file_manager.DecryptFileName(enc_path, bytearray(group_lookup_table[enc_path][0], 'utf-8'))
         if dec_path == abs_path:
             enc_abs_path = enc_path
             havePermission = True
