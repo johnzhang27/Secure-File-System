@@ -154,12 +154,15 @@ class Server:
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file[1], enc_file[0])
+            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
                 return "File already exists"
         havePermission = False
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == self.file_manager.current_path:
                 havePermission = True
                 break
@@ -179,7 +182,7 @@ class Server:
         lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file[1], enc_file[0])
+            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
                 fileExists = True
                 break
@@ -189,6 +192,9 @@ class Server:
         enc_abs_path = ""
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == abs_path:
                 havePermission = True
                 enc_abs_path = enc_path
@@ -206,7 +212,7 @@ class Server:
         lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file[1], enc_file[0])
+            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
                 fileExists = True
                 break
@@ -216,6 +222,9 @@ class Server:
         enc_abs_path = ""
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == abs_path:
                 havePermission = True
                 enc_abs_path = enc_path
@@ -234,12 +243,15 @@ class Server:
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file[1], enc_file[0])
+            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == directoryname:
                 return "Directory already exists"
-            havePermission = False
+        havePermission = False
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == self.file_manager.current_path:
                 havePermission = True
                 break
@@ -259,7 +271,7 @@ class Server:
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file[1], enc_file[0])
+            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == directoryname:
                 fileExists = True
                 break
@@ -268,6 +280,9 @@ class Server:
         havePermission = False
         for enc_path in group_lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, group_lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == abs_path:
                 enc_abs_path = enc_path
                 havePermission = True
@@ -287,6 +302,9 @@ class Server:
         havePermission = False
         for enc_path in group_lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, group_lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == self.file_manager.current_path:
                 enc_abs_path = enc_path
                 havePermission = True
@@ -304,7 +322,7 @@ class Server:
         group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file[1], enc_file[0])
+            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == old_file_name:
                 fileExists = True
                 break
@@ -313,6 +331,9 @@ class Server:
         enc_abs_path = ""
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == abs_path:
                 havePermission = True
                 enc_abs_path = enc_path
@@ -336,7 +357,7 @@ class Server:
         lookup_table = self.db.generate_owned_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file[1], enc_file[0])
+            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
                 fileExists = True
                 break
@@ -345,6 +366,9 @@ class Server:
         enc_abs_path = ""
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == abs_path:
                 havePermission = True
                 enc_abs_path = enc_path
@@ -367,7 +391,7 @@ class Server:
         lookup_table = self.db.generate_owned_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
         for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file[1], enc_file[0])
+            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
                 fileExists = True
                 break
@@ -376,6 +400,9 @@ class Server:
         enc_abs_path = ""
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+            enc_file_pair = os.path.split(dec_path)
+            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == abs_path:
                 havePermission = True
                 enc_abs_path = enc_path

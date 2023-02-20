@@ -98,7 +98,7 @@ class DatabaseManager:
 
     def check_file_exists(self, abspath):
         files = sqlalchemy.select(database_models.File)
-        for file in files:
+        for file in self.session.scalars(files):
             if file.abs_path == abspath:
                 return file
         return None
