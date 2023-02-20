@@ -13,8 +13,11 @@ class FileManager:
 
     def __init__(self):
         self.relative_path = '/home'
-        os.mkdir('home_dir')
-        os.chdir('home_dir')
+        if (os.path.exists('home_dir')):
+            os.chdir('home_dir')
+        else:
+            os.mkdir('home_dir')
+            os.chdir('home_dir')
         self.current_path = os.getcwd()
         print("in constructor: ")
         print(os.getcwd())
@@ -406,3 +409,21 @@ class FileManager:
 
         return lt2
     # 0 for directory and 1 for file
+
+    def generateIntegrityCode(self, encrypted_filename):
+        
+        integrity_filename = hashlib.md5(encrypted_filename.encode()).hexdigest()
+        with open(encrypted_filename, 'rb') as ff:
+            data = ff.read()    
+            integrity_content = hashlib.md5(data).hexdigest()
+
+        return integrity_filename, integrity_content
+    
+    def verifyIntegrityCode(self, filename, integrity_filename, integrity_content):
+        code1, code2 = self.generateIntegrityCode(filename)
+
+        if code1 == integrity_filename and code2 == integrity_content:
+            return True
+
+        else:
+            return False
