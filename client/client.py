@@ -132,8 +132,6 @@ class Client:
             data = ff.read()    
             integrity_content = hashlib.md5(data).hexdigest()
 
-        # print(integrity_filename)
-        # print(integrity_content)
         return integrity_filename, integrity_content
     
     def __verifyIntegrityCode(self, filename, integrity_filename, integrity_content):

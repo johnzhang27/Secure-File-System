@@ -25,9 +25,7 @@ class FileManager:
     def createFile(self, fileName):
         """
         Function for creating a file in the current directory
-
         Args: fileName, the plain file name received from user.
-
         Returns: a list which is [encryoted_file_name, plain_absolute_path, encryoted_absolute_path, key]
         """
         print("Start Creating File...")
@@ -63,10 +61,8 @@ class FileManager:
 
         """
         Function for encrypt file contents
-
         Args: encrypted_fileName
               key, encrypotion key
-
         Returns: None
         """
         print("Start File Encryption...")
@@ -87,10 +83,8 @@ class FileManager:
     def encryptFileName(self, fileName, key):
         """
         Function for encrypt file name
-
         Args: fileName, plain file name received from user
               key, encrypotion key
-
         Returns: encrypted file name
         """
         print("Start File Name Encryption...")
@@ -108,11 +102,9 @@ class FileManager:
     def renameFile_public(self, fileName, complete_file_dic, new_fileName):
         """
         Function for adding new contents to a file
-
         Args: fileName, plain file name received from user
               complete_file_dic, {key: encrypted file absolute path, value: pair(encryption key, encrypted file name)}
               new_fileName, plain new_fileName received from user
-
         Returns: a list [encrypted new file name, plain absolute path, encrypted absolute path, encrypted old file name]
         """
         # get a file lsit in the current directory
@@ -154,10 +146,8 @@ class FileManager:
     def DecryptFile(self, encrypted_fileName, key):
         """
         Function for decrypt file contents (only for files in the current directory)
-
         Args: encryoted_fileName
               key, encrypotion key
-
         Returns: decrypted contents
         """
         tmp_key_ = key
@@ -217,10 +207,8 @@ class FileManager:
     def displayFileContents(self, fileName, complete_file_dic):
         """
         Function for display file contents
-
         Args: fileName, plain file name received from user
               complete_file_dic, {key: encrypted file absolute path, value: pair(encryption key, encrypted filename)}
-
         Returns: decrypted contents
         """
 
@@ -236,11 +224,9 @@ class FileManager:
     def addFileContentsWrapper(self, fileName, complete_file_dic, contents):
         """
         Function for adding new contents to a file
-
         Args: fileName, plain file name received from user
               complete_file_dic, {key: encrypted file absolute path, value: pair(encryption key, encrypted filename)}
               contents, plain contents received from user
-
         Returns: None
         """
         file_list = self.getFileListInCurrentDir(complete_file_dic)
@@ -274,9 +260,7 @@ class FileManager:
     def createDirectory(self, directoryName):
         """
         Function for creating new file directory
-
         Args: directoryName, received from user
-
         Returns: [encrypted directory name, plain absolute path, encrypted absolute path, key]
         """
         #TODO might change the structure later.
@@ -289,7 +273,7 @@ class FileManager:
 
         encrypted_dir = self.encryptDirectory(directoryName, tmp_key_)
 
-        full_path = os.path.join(self.current_path, directoryName)
+        full_path = os.path.join(self.current_path, encrypted_dir)
 
         encrypted_path = self.encryptDirectory(full_path, tmp_key_)
 
@@ -333,10 +317,8 @@ class FileManager:
     def changeDirectory(self, path, lookup_table_v2):
         """
         Function for changing directory
-
         Args: path, plain path received from user
               lookup_table_v2: {key: plain directory name received from user, value: encrypted directory name not path}
-
         Returns: None
         """
         if (path == '../'):
@@ -372,9 +354,7 @@ class FileManager:
 
         """
         Function for listing all files and directories in the current directory
-
         Args: lookupTable, {key: encrypted file absolute path, value: encryption key}
-
         Returns: None
         """
         # get the list using os command
