@@ -126,7 +126,7 @@ def createFile(filename):
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
     enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
     for enc_file in enc_file_list:
-        dec_file = file_manager.DecryptFileName(enc_file[1], enc_file[0])
+        dec_file = file_manager.DecryptFileName(enc_file[1],(enc_file[0]))
         if dec_file == filename:
             return "File already exists"
     havePermission = False
