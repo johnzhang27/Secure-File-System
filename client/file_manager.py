@@ -40,7 +40,7 @@ class FileManager:
             # encryt file name
             encrypted_fileName = self.encryptFileName(fileName, tmp_key_)
             # encryot absolute path
-            absolute_path = os.path.join(self.current_path, fileName)
+            absolute_path = os.path.join(self.current_path, encrypted_fileName)
             encrypted_absolute_path = self.encryptFileName(absolute_path, tmp_key_)
 
             self.renameFile(fileName, encrypted_fileName)
@@ -122,13 +122,13 @@ class FileManager:
         # iterate over the list
         for f in file_list.keys():
             # decrypt every element
-            tmp = self.DecryptFileName(f,file_list[f][0])
+            tmp = self.DecryptFileName(file_list[f][1],file_list[f][0])
             # if the decrypted filename match what user passed
-            if tmp[-tmp_len:] == fileName:
+            if tmp == fileName:
  
                 encrypted_new_name = self.encryptFileName(new_fileName, file_list[f][0])
                 # encryot absolute path
-                absolute_path = os.path.join(self.current_path, new_fileName)
+                absolute_path = os.path.join(self.current_path, encrypted_new_name)
                 encrypted_absolute_path = self.encryptFileName(absolute_path, file_list[f][0])
 
                 os.rename(file_list[f][1], encrypted_new_name)
