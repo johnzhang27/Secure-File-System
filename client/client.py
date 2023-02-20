@@ -25,6 +25,7 @@ class Client:
         print("Setting up client")
         self.__host = host
         self.__port = port
+        self.__current_dir - '/home'
         try:
             self.__s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.__s.connect((self.__host, self.__port))
@@ -131,8 +132,6 @@ class Client:
             data = ff.read()    
             integrity_content = hashlib.md5(data).hexdigest()
 
-        # print(integrity_filename)
-        # print(integrity_content)
         return integrity_filename, integrity_content
     
     def __verifyIntegrityCode(self, filename, integrity_filename, integrity_content):
@@ -174,6 +173,9 @@ class Client:
             
             ack_, errorMsg_ = self.__parseMsg(res_)
             print(errorMsg_)
+            # if success, update the current directory
+            if (not ack_):
+                self.__current_dir  = errorMsg_
 
         except Exception as err:
             print ("Error: %s %s" %(directoryName, err))
