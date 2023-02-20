@@ -133,9 +133,6 @@ def createFile(filename):
     havePermission = False
     for enc_path in lookup_table:
             dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
-            enc_file_pair = os.path.split(dec_path)
-            dec_file = file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == file_manager.current_path:
                 havePermission = True
                 break
@@ -165,9 +162,6 @@ def displayContents(filename):
     enc_abs_path = ""
     for enc_path in lookup_table:
         dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
-        enc_file_pair = os.path.split(dec_path)
-        dec_file = file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-        dec_path = os.path.join(enc_file_pair[0], dec_file)
         if dec_path == abs_path:
             havePermission = True
             enc_abs_path = enc_path
@@ -195,9 +189,6 @@ def editFile(filename, contents):
     enc_abs_path = ""
     for enc_path in lookup_table:
         dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
-        enc_file_pair = os.path.split(dec_path)
-        dec_file = file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-        dec_path = os.path.join(enc_file_pair[0], dec_file)
         if dec_path == abs_path:
             havePermission = True
             enc_abs_path = enc_path
@@ -220,17 +211,15 @@ def createDirectory(directoryname):
         dec_file = file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
         if dec_file == directoryname:
             return "Directory already exists"
-    havePermission = False
-    for enc_path in lookup_table:
-        dec_path = file_manager.decryptDirectory(enc_path, lookup_table[enc_path][0])
-        enc_file_pair = os.path.split(dec_path)
-        dec_file = file_manager.decryptDirectory(enc_file_pair[1], group_lookup_table[enc_path][0])
-        dec_path = os.path.join(enc_file_pair[0], dec_file)
-        if dec_path == file_manager.current_path:
-            havePermission = True
-            break
-    if (not havePermission):
-        return "Do not have permission to do that command"
+    # havePermission = False
+    # for enc_path in lookup_table:
+    #     dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+    #     print(dec_path)
+    #     if dec_path == file_manager.current_path:
+    #         havePermission = True
+    #         break
+    # if (not havePermission):
+    #     return "Do not have permission to do that command"
     outputparams = file_manager.createDirectory(directoryname)
     db.create_file(outputparams[2], outputparams[0], outputparams[3], current_user, True)
     return "Directory created!"
@@ -242,27 +231,27 @@ def changeDirectory(directoryname):
     if (directoryname == "../"):
         file_manager.changeDirectory(directoryname)
         return
-    abs_path = os.path.join(file_manager.current_path, directoryname)
+   
     fileExists = False
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
     enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
+    abs_path = ""
     for enc_file in enc_file_list:
         dec_file = file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
         if dec_file == directoryname:
             fileExists = True
+            abs_path = file_manager.DecryptFileName(enc_file, enc_file_list[enc_file][0])
             break
     if (not fileExists):
         return "Directory does not exist in current directory"
     havePermission = False
-    print("Group lookup: " + str(group_lookup_table))
+    enc_abs_path = ""
     for enc_path in group_lookup_table:
         dec_path = file_manager.DecryptFileName(enc_path, group_lookup_table[enc_path][0])
-        enc_dir_pair = os.path.split(dec_path)
-        dec_dir = file_manager.DecryptFileName(enc_dir_pair[1], group_lookup_table[enc_path][0])
-        dec_path = os.path.join(enc_dir_pair[0], dec_dir)
+        print(dec_path)
         if dec_path == abs_path:
-            enc_abs_path = enc_path
             havePermission = True
+            enc_abs_path = enc_path
             break
     if (not havePermission):
         return "Do not have permission to do that command"
@@ -281,9 +270,6 @@ def displayDirectoryContent():
     havePermission = False
     for enc_path in group_lookup_table:
         dec_path = file_manager.DecryptFileName(enc_path, group_lookup_table[enc_path][0])
-        enc_file_pair = os.path.split(dec_path)
-        dec_file = file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-        dec_path = os.path.join(enc_file_pair[0], dec_file)
         if dec_path == file_manager.current_path:
             enc_abs_path = enc_path
             havePermission = True

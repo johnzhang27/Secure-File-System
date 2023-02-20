@@ -13,8 +13,11 @@ class FileManager:
 
     def __init__(self):
         self.relative_path = '/home'
-        os.mkdir('home_dir')
-        os.chdir('home_dir')
+        if (os.path.exists('home_dir')):
+            os.chdir('home_dir')
+        else:
+            os.mkdir('home_dir')
+            os.chdir('home_dir')
         self.current_path = os.getcwd()
         print("in constructor: ")
         print(os.getcwd())
@@ -22,9 +25,7 @@ class FileManager:
     def createFile(self, fileName):
         """
         Function for creating a file in the current directory
-
         Args: fileName, the plain file name received from user.
-
         Returns: a list which is [encryoted_file_name, plain_absolute_path, encryoted_absolute_path, key]
         """
         print("Start Creating File...")
@@ -37,7 +38,7 @@ class FileManager:
             # encryt file name
             encrypted_fileName = self.encryptFileName(fileName, tmp_key_)
             # encryot absolute path
-            absolute_path = os.path.join(self.current_path, fileName)
+            absolute_path = os.path.join(self.current_path, encrypted_fileName)
             encrypted_absolute_path = self.encryptFileName(absolute_path, tmp_key_)
 
             self.renameFile(fileName, encrypted_fileName)
@@ -60,10 +61,8 @@ class FileManager:
 
         """
         Function for encrypt file contents
-
         Args: encrypted_fileName
               key, encrypotion key
-
         Returns: None
         """
         print("Start File Encryption...")
@@ -84,10 +83,8 @@ class FileManager:
     def encryptFileName(self, fileName, key):
         """
         Function for encrypt file name
-
         Args: fileName, plain file name received from user
               key, encrypotion key
-
         Returns: encrypted file name
         """
         print("Start File Name Encryption...")
@@ -105,11 +102,9 @@ class FileManager:
     def renameFile_public(self, fileName, complete_file_dic, new_fileName):
         """
         Function for adding new contents to a file
-
         Args: fileName, plain file name received from user
               complete_file_dic, {key: encrypted file absolute path, value: pair(encryption key, encrypted file name)}
               new_fileName, plain new_fileName received from user
-
         Returns: a list [encrypted new file name, plain absolute path, encrypted absolute path, encrypted old file name]
         """
         # get a file lsit in the current directory
@@ -119,13 +114,13 @@ class FileManager:
         # iterate over the list
         for f in file_list.keys():
             # decrypt every element
-            tmp = self.DecryptFileName(f,file_list[f][0])
+            tmp = self.DecryptFileName(file_list[f][1],file_list[f][0])
             # if the decrypted filename match what user passed
-            if tmp[-tmp_len:] == fileName:
+            if tmp == fileName:
  
                 encrypted_new_name = self.encryptFileName(new_fileName, file_list[f][0])
                 # encryot absolute path
-                absolute_path = os.path.join(self.current_path, new_fileName)
+                absolute_path = os.path.join(self.current_path, encrypted_new_name)
                 encrypted_absolute_path = self.encryptFileName(absolute_path, file_list[f][0])
 
                 os.rename(file_list[f][1], encrypted_new_name)
@@ -151,10 +146,8 @@ class FileManager:
     def DecryptFile(self, encrypted_fileName, key):
         """
         Function for decrypt file contents (only for files in the current directory)
-
         Args: encryoted_fileName
               key, encrypotion key
-
         Returns: decrypted contents
         """
         tmp_key_ = key
@@ -199,7 +192,6 @@ class FileManager:
     # private function, you don't need to worry about this
     def getFileListInCurrentDir(self, complete_file_dic):
         current_files_and_directories = os.listdir()
-        print(current_files_and_directories)
 
         file_list = {}
         for ele in complete_file_dic:
@@ -215,10 +207,8 @@ class FileManager:
     def displayFileContents(self, fileName, complete_file_dic):
         """
         Function for display file contents
-
         Args: fileName, plain file name received from user
               complete_file_dic, {key: encrypted file absolute path, value: pair(encryption key, encrypted filename)}
-
         Returns: decrypted contents
         """
 
@@ -234,11 +224,9 @@ class FileManager:
     def addFileContentsWrapper(self, fileName, complete_file_dic, contents):
         """
         Function for adding new contents to a file
-
         Args: fileName, plain file name received from user
               complete_file_dic, {key: encrypted file absolute path, value: pair(encryption key, encrypted filename)}
               contents, plain contents received from user
-
         Returns: None
         """
         file_list = self.getFileListInCurrentDir(complete_file_dic)
@@ -272,9 +260,7 @@ class FileManager:
     def createDirectory(self, directoryName):
         """
         Function for creating new file directory
-
         Args: directoryName, received from user
-
         Returns: [encrypted directory name, plain absolute path, encrypted absolute path, key]
         """
         #TODO might change the structure later.
@@ -287,10 +273,10 @@ class FileManager:
 
         encrypted_dir = self.encryptDirectory(directoryName, tmp_key_)
 
-        full_path = os.path.join(self.current_path, directoryName)
+        full_path = os.path.join(self.current_path, encrypted_dir)
 
         encrypted_path = self.encryptDirectory(full_path, tmp_key_)
-
+        print(self.current_path)
         os.rename(directoryName, encrypted_dir)
 
         # tmp_string = "{} {} {}".format(full_path, encrypted_dir, tmp_key_)
@@ -331,10 +317,8 @@ class FileManager:
     def changeDirectory(self, path, lookup_table_v2):
         """
         Function for changing directory
-
         Args: path, plain path received from user
               lookup_table_v2: {key: plain directory name received from user, value: encrypted directory name not path}
-
         Returns: None
         """
         if (path == '../'):
@@ -370,9 +354,7 @@ class FileManager:
 
         """
         Function for listing all files and directories in the current directory
-
         Args: lookupTable, {key: encrypted file absolute path, value: encryption key}
-
         Returns: None
         """
         # get the list using os command
@@ -407,3 +389,21 @@ class FileManager:
 
         return lt2
     # 0 for directory and 1 for file
+
+    def generateIntegrityCode(self, encrypted_filename):
+        
+        integrity_filename = hashlib.md5(encrypted_filename.encode()).hexdigest()
+        with open(encrypted_filename, 'rb') as ff:
+            data = ff.read()    
+            integrity_content = hashlib.md5(data).hexdigest()
+
+        return integrity_filename, integrity_content
+    
+    def verifyIntegrityCode(self, filename, integrity_filename, integrity_content):
+        code1, code2 = self.generateIntegrityCode(filename)
+
+        if code1 == integrity_filename and code2 == integrity_content:
+            return True
+
+        else:
+            return False
