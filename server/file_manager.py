@@ -199,6 +199,7 @@ class FileManager:
     # private function, you don't need to worry about this
     def getFileListInCurrentDir(self, complete_file_dic):
         current_files_and_directories = os.listdir()
+        print(current_files_and_directories)
 
         file_list = {}
         for ele in complete_file_dic:

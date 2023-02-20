@@ -144,7 +144,9 @@ class DatabaseManager:
         return lookup_table
 
     def generate_group_permitted_lookup_table(self, user):
-        lookup_table = self.generate_permitted_lookup_table(self, user)
+        lookup_table = self.generate_permitted_lookup_table(user)
+        if user.group == None:
+            return lookup_table
         for group_mem in user.group.users:
             lookup_table = self.add_to_lookup_table(group_mem.owned_files, lookup_table)
         return lookup_table
@@ -153,7 +155,7 @@ class DatabaseManager:
         for file in file_list:
             if file.abs_path in lookup_table:
                 continue
-            lookup_table[file.abs_path] = (file.file_name, file.key)
+            lookup_table[file.abs_path] = (file.key, file.file_name)
         return lookup_table
     
 
