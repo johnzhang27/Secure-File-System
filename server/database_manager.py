@@ -2,8 +2,6 @@ import sqlalchemy
 import sqlalchemy.orm as sqlorm
 import database_models
 
-# https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_orm_updating_objects.htm
-
 class DatabaseManager:
     
     def __init__(self):
@@ -29,7 +27,9 @@ class DatabaseManager:
         self.session.commit()
         return created_user
 
-    def remove_user_in_database(self, username, password):
+    def remove_user_in_database(self, user):
+        self.session.delete(user)
+        self.session.commit()
         return
 
     def check_user_exists(self, username):
@@ -53,6 +53,8 @@ class DatabaseManager:
         self.session.commit()
 
     def remove_group_from_database(self, group):
+        self.session.delete(group)
+        self.session.commit()
         return
 
     def check_group_exists(self, groupname):
@@ -74,7 +76,6 @@ class DatabaseManager:
         group.users.remove(user)
         self.session.commit()
 
-   
     def create_file(self, abspath, filename, file_key, user, is_dir, file_name_hash="", file_hash=""):
         file = database_models.File(abs_path=abspath, 
                                     file_name=filename,
@@ -90,12 +91,15 @@ class DatabaseManager:
         file.file_name = filename
         self.session.commit()
 
-
     def edit_file(self, file, abspath, filename, file_name_hash="", file_hash=""):
         file.abs_path = abspath
         file.file_name = filename
         file.file_name_hash = file_name_hash
         file.file_hash = file_hash
+        self.session.commit()
+
+    def delete_file(self, file):
+        self.session.delete(file)
         self.session.commit()
 
     def check_file_exists(self, abspath):
@@ -134,6 +138,21 @@ class DatabaseManager:
         file.permitted_users.remove(requesting_user)
         self.session.commit()
         return (True, "Success")
+
+    def generate_general_lookup_table(self):
+        files = sqlalchemy.select(database_models.File)
+        file_list = []
+        for file in self.session.scalars(files):
+            file_list.append(file)
+        lookup_table = self.add_to_lookup_table(file_list, {})
+        return lookup_table
+
+    def generate_file_lookup_table(self):
+        files = sqlalchemy.select(database_models.File)
+        file_list = {}
+        for file in self.session.scalars(files):
+            file_list[file.file_name] = file.key
+        return file_list
 
     def generate_owned_lookup_table(self, user):
         lookup_table = {}

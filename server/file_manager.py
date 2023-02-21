@@ -9,18 +9,21 @@ class FileManager:
 
     relative_path = None
     current_path = None
+    home_path = None
     # fileName = '1.txt'
 
     def __init__(self):
-        self.relative_path = '/home'
+        self.relative_path = '\\home'
         if (os.path.exists('home_dir')):
             os.chdir('home_dir')
         else:
             os.mkdir('home_dir')
             os.chdir('home_dir')
         self.current_path = os.getcwd()
-        print("in constructor: ")
-        print(os.getcwd())
+        self.home_path = os.getcwd()
+        # print("in constructor: ")
+        # print(os.getcwd())
+        print(self.relative_path)
     
     def createFile(self, fileName):
         """
@@ -35,6 +38,7 @@ class FileManager:
 
 
             f = open(fileName, "x")
+            f.close()
             # encryt file name
             encrypted_fileName = self.encryptFileName(fileName, tmp_key_)
             # encryot absolute path
@@ -198,8 +202,8 @@ class FileManager:
             if complete_file_dic[ele][1] in current_files_and_directories:
                 file_list[ele] = (complete_file_dic[ele][0], complete_file_dic[ele][1])
 
-        print("files in current directory: ")  
-        print(file_list)
+        # print("files in current directory: ")  
+        # print(file_list)
 
         return file_list
     
@@ -323,17 +327,17 @@ class FileManager:
         """
         if (path == '../'):
             try:
-                if self.relative_path == '/home':
+                if self.relative_path == '\\home':
                     return
                 else:
                     os.chdir("..")
-                    s_list = self.relative_path.split("/")
+                    s_list = self.relative_path.split("\\")
 
                     # Remove the last element of the list
                     s_list = s_list[:-1]
 
                     # Join the list back into a string using the '/' character
-                    new_s = "/".join(s_list)
+                    new_s = "\\".join(s_list)
 
                     self.relative_path = new_s
                     self.current_path = os.getcwd()
@@ -345,7 +349,7 @@ class FileManager:
                 print("change directory")
                 os.chdir(lookup_table_v2[path])
                 self.current_path = os.getcwd()
-                self.relative_path = self.relative_path + '/' + path
+                self.relative_path = self.relative_path + '\\' + path
             except OSError as error: 
                 print(error)
 
@@ -407,3 +411,7 @@ class FileManager:
 
         else:
             return False
+
+    def resetToHomePath(self):
+        self.current_path = self.home_path
+        self.relative_path = "\\home"

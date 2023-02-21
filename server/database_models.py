@@ -3,6 +3,8 @@ import sqlalchemy.orm as sqlorm
 import typing
 
 # https://www.tutorialspoint.com/sqlalchemy/
+# https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_orm_updating_objects.htm
+# https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_orm_deleting_related_objects.htm#:~:text=It%20is%20easy%20to%20perform,session%20and%20commit%20the%20action.
 # https://auth0.com/blog/sqlalchemy-orm-tutorial-for-python-developers/
 # https://towardsdatascience.com/sqlalchemy-python-tutorial-79a577141a91#:~:text=SQLAlchemy%20can%20be%20used%20to,metadata%20based%20on%20that%20information.
 

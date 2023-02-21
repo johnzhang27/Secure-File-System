@@ -8,6 +8,7 @@ import sqlalchemy
 # https://docs.sqlalchemy.org/en/20/tutorial/engine.html
 # https://docs.sqlalchemy.org/en/20/orm/quickstart.html
 # https://docs.sqlalchemy.org/en/20/core/engines.html
+# https://github.com/aianta/cmput404-tcp-lab
 
 HOST = "127.0.0.1"
 PORT = 8000
