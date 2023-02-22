@@ -3,6 +3,7 @@ import sys
 import os
 import pwinput
 import hashlib
+import shutil
 from cryptography.fernet import Fernet
 
 class FileManager:
@@ -394,24 +395,47 @@ class FileManager:
         return lt2
     # 0 for directory and 1 for file
 
-    def generateIntegrityCode(self, encrypted_filename):
+    def generateIntegrityCode(self, abs_path, encrypted_filename):
         
         integrity_filename = hashlib.md5(encrypted_filename.encode()).hexdigest()
-        with open(encrypted_filename, 'rb') as ff:
+        with open(abs_path, 'rb') as ff:
             data = ff.read()    
             integrity_content = hashlib.md5(data).hexdigest()
 
         return integrity_filename, integrity_content
+
+    def generateIntergityCodeForDirectory(self, enc_dir_name):
+        return hashlib.md5(enc_dir_name.encode()).hexdigest()
     
-    def verifyIntegrityCode(self, filename, integrity_filename, integrity_content):
-        code1, code2 = self.generateIntegrityCode(filename)
+    def verifyIntegrityCode(self, abs_path, enc_file_name, integrity_filename, integrity_content):
+        if not os.path.exists(abs_path):
+            return False
+
+        code1, code2 = self.generateIntegrityCode(abs_path, enc_file_name)
 
         if code1 == integrity_filename and code2 == integrity_content:
             return True
 
         else:
             return False
+    
+    def verifyIntergityCodeForDirectory(self, abs_path):
+        return os.path.exists(abs_path)
 
     def resetToHomePath(self):
         self.current_path = self.home_path
         self.relative_path = "\\home"
+        os.chdir(self.current_path)
+
+    # https://stackoverflow.com/questions/185936/how-to-delete-the-contents-of-a-folder
+    def deleteFile(self, filename, lookup_table):
+        file_list = self.getFileListInCurrentDir(lookup_table)
+        for file in file_list:
+            dec_file = self.DecryptFileName(file_list[file][1], file_list[file][0])
+            if dec_file == filename:
+                if os.path.isfile(file_list[file][1]):
+                    os.remove(file_list[file][1])
+                else:
+                    shutil.rmtree(file_list[file][1])
+                return
+        return

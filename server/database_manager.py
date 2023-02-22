@@ -66,9 +66,10 @@ class DatabaseManager:
 
     def add_user_to_group(self, user, group):
         if user in group.users:
-            return
+            return False
         group.users.append(user)
         self.session.commit()
+        return True
 
     def remove_user_from_group(self, user, group):
         if user not in group.users:
@@ -76,19 +77,33 @@ class DatabaseManager:
         group.users.remove(user)
         self.session.commit()
 
-    def create_file(self, abspath, filename, file_key, user, is_dir, file_name_hash="", file_hash=""):
+    def create_file(self, abspath, filename, file_key, user, is_dir, parent_dir, file_name_hash="", file_hash=""):
         file = database_models.File(abs_path=abspath, 
                                     file_name=filename,
                                     key=file_key,
                                     file_name_hash=file_name_hash,
                                     file_hash=file_hash,
-                                    is_dir=is_dir)
+                                    is_dir=is_dir,
+                                    parent_dir=parent_dir,
+                                    is_home_dir=False)
         user.owned_files.append(file)
         self.session.commit()
 
-    def rename_file(self, file, abspath, filename):
+    def create_home_dir(self, abspath, filename, file_key, user, file_name_hash="", file_hash=""):
+        file = database_models.File(abs_path=abspath, 
+                                    file_name=filename,
+                                    key=file_key,
+                                    file_name_hash=file_name_hash,
+                                    file_hash=file_hash,
+                                    is_dir=True,
+                                    is_home_dir=True)
+        user.owned_files.append(file)
+        self.session.commit()
+
+    def rename_file(self, file, abspath, filename, file_name_hash=""):
         file.abs_path = abspath
         file.file_name = filename
+        file.file_name_hash = file_name_hash
         self.session.commit()
 
     def edit_file(self, file, abspath, filename, file_name_hash="", file_hash=""):

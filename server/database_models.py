@@ -40,6 +40,9 @@ class File(Base):
     file_name_hash = sqlalchemy.Column(sqlalchemy.String)
     key = sqlalchemy.Column(sqlalchemy.String)
     is_dir = sqlalchemy.Column(sqlalchemy.Boolean)
+    is_home_dir = sqlalchemy.Column(sqlalchemy.Boolean)
+    # NULL if home dir of user
+    parent_dir = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("FILE_DATA.abs_path"))
     owner_id = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("USER_DATA.user_id"))
     owner = sqlorm.relationship("User", back_populates="owned_files")
     permitted_users = sqlorm.relationship("User",
