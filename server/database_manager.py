@@ -1,6 +1,8 @@
 import sqlalchemy
 import sqlalchemy.orm as sqlorm
 import database_models
+import bcrypt
+# https://www.makeuseof.com/encrypt-password-in-python-bcrypt/ 
 
 class DatabaseManager:
     
@@ -20,9 +22,10 @@ class DatabaseManager:
         self.session.close()
 
     def register_user_in_database(self, username, password): 
+        enc_password = bcrypt.hashpw(password.encode('utf-8') ,bcrypt.gensalt())
         created_user = database_models.User(
             user_id=username,
-            password=password)
+            password=enc_password)
         self.session.add(created_user)
         self.session.commit()
         return created_user
@@ -43,9 +46,7 @@ class DatabaseManager:
         passwordSt = sqlalchemy.select(database_models.User.password).where(database_models.User.user_id 
                                                                             == username)
         passwordRec = self.session.execute(passwordSt).first()[0]
-        if (passwordRec != password):
-            return False
-        return True
+        return bcrypt.checkpw(password.encode('utf-8'), passwordRec)
             
     def create_group_in_database(self, groupname):
         newGroup = database_models.Group(group_id=groupname)

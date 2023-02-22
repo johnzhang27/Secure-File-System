@@ -1,6 +1,7 @@
 import database_manager
 import file_manager
 import os
+import bcrypt
 
 db = database_manager.DatabaseManager()
 current_user = None
