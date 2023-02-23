@@ -55,16 +55,16 @@ def main():
         elif (commandArr[0] == "createFile"):
             print(createFile(commandArr[1]))
         elif (commandArr[0] == "addUserToGroup"):
-            print(addUserToGroup(commandArr[1]))
-        elif (commandArr[0] == "displayFile"):
+            print(addUserToGroup(commandArr[1], commandArr[2]))
+        elif (commandArr[0] == "cat"):
             print(displayContents(commandArr[1]))
-        elif(commandArr[0] == "addFileContents"):
+        elif(commandArr[0] == "echo"):
             print(editFile(commandArr[1], commandArr[2]))
-        elif (commandArr[0] == "createDirectory"):
+        elif (commandArr[0] == "mkdir"):
             print(createDirectory(commandArr[1]))
-        elif (commandArr[0] == "changeDirectory"):
+        elif (commandArr[0] == "cd"):
             print(changeDirectory(commandArr[1]))
-        elif (commandArr[0] == "displayDirectoryContents"):
+        elif (commandArr[0] == "ls"):
             print(displayDirectoryContent())
         elif(commandArr[0] == "renameFile"):
             print(renameFile(commandArr[1], commandArr[2]))
@@ -146,7 +146,8 @@ def createFile(filename):
 def displayContents(filename):
     if current_user == None:
         return "Must be logged in!"
-    abs_path = os.path.join(file_manager.current_path, filename)
+    havePermission = False
+    abs_path = ''
     fileExists = False
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
     lookup_table = db.generate_permitted_lookup_table(current_user)
@@ -155,10 +156,12 @@ def displayContents(filename):
         dec_file = file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
         if dec_file == filename:
             fileExists = True
+            abs_path = file_manager.DecryptFileName(enc_file, lookup_table[enc_file][0])
+            # havePermission = True
             break
     if (not fileExists):
         return "File does not exist in current directory"
-    havePermission = False
+    # havePermission = False
     enc_abs_path = ""
     for enc_path in lookup_table:
         dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
@@ -174,7 +177,8 @@ def displayContents(filename):
 def editFile(filename, contents):
     if current_user == None:
         return "Must be logged in!"
-    abs_path = os.path.join(file_manager.current_path, filename)
+    # havePermission = False
+    abs_path = ''
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
     lookup_table = db.generate_permitted_lookup_table(current_user)
     enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
@@ -182,6 +186,8 @@ def editFile(filename, contents):
         dec_file = file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
         if dec_file == filename:
             fileExists = True
+            abs_path = file_manager.DecryptFileName(enc_file, lookup_table[enc_file][0])
+            # havePermission = True
             break
     if (not fileExists):
         return "File does not exist in current directory"
@@ -211,15 +217,15 @@ def createDirectory(directoryname):
         dec_file = file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
         if dec_file == directoryname:
             return "Directory already exists"
-    # havePermission = False
-    # for enc_path in lookup_table:
-    #     dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
-    #     print(dec_path)
-    #     if dec_path == file_manager.current_path:
-    #         havePermission = True
-    #         break
-    # if (not havePermission):
-    #     return "Do not have permission to do that command"
+    havePermission = False
+    for enc_path in lookup_table:
+        dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+        print(dec_path)
+        if dec_path == file_manager.current_path:
+            havePermission = True
+            break
+    if (not havePermission):
+        return "Do not have permission to do that command"
     outputparams = file_manager.createDirectory(directoryname)
     db.create_file(outputparams[2], outputparams[0], outputparams[3], current_user, True)
     return "Directory created!"
@@ -229,10 +235,14 @@ def changeDirectory(directoryname):
     if current_user == None:
         return "Must be logged in!"
     if (directoryname == "../"):
-        file_manager.changeDirectory(directoryname)
+        group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
+        enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
+        lt2 = file_manager.generateLookupTable(enc_file_list)
+        file_manager.changeDirectory(directoryname, lt2)
         return
    
     fileExists = False
+    lookup_table = db.generate_permitted_lookup_table(current_user)
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
     enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
     abs_path = ""
@@ -240,7 +250,7 @@ def changeDirectory(directoryname):
         dec_file = file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
         if dec_file == directoryname:
             fileExists = True
-            abs_path = file_manager.DecryptFileName(enc_file, enc_file_list[enc_file][0])
+            abs_path = file_manager.DecryptFileName(enc_file, lookup_table[enc_file][0])
             break
     if (not fileExists):
         return "Directory does not exist in current directory"
@@ -281,24 +291,29 @@ def displayDirectoryContent():
 def renameFile(old_file_name, new_file_name):
     if current_user == None:
         return "Must be logged in!"
-    abs_path = os.path.join(file_manager.current_path, old_file_name)
+    # abs_path = os.path.join(file_manager.current_path, old_file_name)
+    abs_path = ''
     fileExists = False
     lookup_table = db.generate_permitted_lookup_table(current_user)
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
     enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
     for enc_file in enc_file_list:
         dec_file = file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
-        enc_file_pair = os.path.split(dec_path)
-        dec_file = file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-        dec_path = os.path.join(enc_file_pair[0], dec_file)
+        # enc_file_pair = os.path.split(dec_path)
+        # dec_file = file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
+        # abs_path = file_manager.DecryptFileName(enc_file, group_lookup_table[enc_file][0])
         if dec_file == old_file_name:
             fileExists = True
+            abs_path = file_manager.DecryptFileName(enc_file, lookup_table[enc_file][0])
+            # havePermission = True
             break
     if (not fileExists):
         return "File does not exist in current directory"
     enc_abs_path = ""
+    havePermission = False
     for enc_path in lookup_table:
         dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+        print("dec_path is: " + dec_path)
         if dec_path == abs_path:
             havePermission = True
             enc_abs_path = enc_path
@@ -317,7 +332,7 @@ def grantPermission(username, filename):
     userObj = db.check_user_exists(username)
     if (userObj == None):
         return "Specified user does not exist"
-    abs_path = os.path.join(file_manager.current_path, filename)
+    abs_path = ''
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
     lookup_table = db.generate_owned_lookup_table(current_user)
     enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
@@ -328,6 +343,7 @@ def grantPermission(username, filename):
         dec_path = os.path.join(enc_file_pair[0], dec_file)
         if dec_file == filename:
             fileExists = True
+            abs_path = file_manager.DecryptFileName(enc_file, lookup_table[enc_file][0])
             break
     if (not fileExists):
         return "File does not exist in current directory"
@@ -351,7 +367,7 @@ def removePermission(username, filename):
     userObj = db.check_user_exists(username)
     if (userObj == None):
         return "Specified user does not exist"
-    abs_path = os.path.join(file_manager.current_path, filename)
+    abs_path = ''
     group_lookup_table = db.generate_group_permitted_lookup_table(current_user)
     lookup_table = db.generate_owned_lookup_table(current_user)
     enc_file_list = file_manager.getFileListInCurrentDir(group_lookup_table)
@@ -362,6 +378,7 @@ def removePermission(username, filename):
         dec_path = os.path.join(enc_file_pair[0], dec_file)
         if dec_file == filename:
             fileExists = True
+            abs_path = file_manager.DecryptFileName(enc_file, lookup_table[enc_file][0])
             break
     if (not fileExists):
         return "File does not exist in current directory"
