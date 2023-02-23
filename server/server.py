@@ -29,7 +29,7 @@ class Server:
     def start_server(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.host, self.port))
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.listen()
         while True: 
             conn, addr = self.socket.accept()
@@ -44,91 +44,114 @@ class Server:
         with conn:
             rec_data = b""
             while True:
-                data = conn.recv(4096)
+                data = conn.recv(1024)
                 if not data:
                     break
-                rec_data += data
-        self.parse_rec_data(rec_data, conn)
+                # rec_data += data
+                ans = self.parse_rec_data(data, conn)
     
     def parse_rec_data(self, rec_data, conn):
         rec_string = rec_data.decode()
+        print(rec_string)
         recStringArray = rec_string.split()
         commandCode = 0
         try:
             commandCode = int(recStringArray[0])
         except ValueError:
             #send error response: improper command
-            conn.sendall("Improper command")
-            return
+            conn.sendall("Improper command".encode())
+            return False
         if (commandCode == 0):
             if len(recStringArray) != 3:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.login(recStringArray[1], recStringArray[2]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.login(recStringArray[1], recStringArray[2]).encode())
         elif (commandCode == 1):
             if len(recStringArray) != 3:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.registerUser(recStringArray[1], recStringArray[2]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.registerUser(recStringArray[1], recStringArray[2]).encode())
         elif (commandCode == 2):
             if len(recStringArray) != 2:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return 
-            conn.sendall(self.createFile(recStringArray[1]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.createFile(recStringArray[1]).encode())
         elif (commandCode == 3):
             if len(recStringArray) != 2:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.displayContents(recStringArray[1]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.displayContents(recStringArray[1]).encode())
         elif (commandCode == 4):
             if len(recStringArray) != 3:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.editFile(recStringArray[1], recStringArray[2]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.editFile(recStringArray[1], recStringArray[2]).encode())
         elif (commandCode == 5):
             if len(recStringArray) != 2:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.createDirectory(recStringArray[1]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.createDirectory(recStringArray[1]).encode())
         elif (commandCode == 6):
             if len(recStringArray) != 2:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.changeDirectory(recStringArray[1]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.changeDirectory(recStringArray[1]).encode())
         elif (commandCode == 7):
             if len(recStringArray) != 1:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.displayDirectoryContent())
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.displayDirectoryContent().encode())
         elif (commandCode == 8):
-            if len(recStringArray) != 2:
+            if len(recStringArray) != 3:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.renameFile(recStringArray[1], recStringArray[2]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.renameFile(recStringArray[1], recStringArray[2]).encode())
         elif (commandCode == 9):
-            if len(recStringArray) != 2:
+            if len(recStringArray) != 3:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.grantPermission(recStringArray[1], recStringArray[2]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.grantPermission(recStringArray[1], recStringArray[2]).encode())
         elif (commandCode == 10):
+            if len(recStringArray) != 3:
+                 #send error response: improper command
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.removePermission(recStringArray[1], recStringArray[2]).encode())
+        elif (commandCode == 11):
             if len(recStringArray) != 2:
                  #send error response: improper command
-                conn.sendall("Improper command")
-                return
-            conn.sendall(self.removePermission(recStringArray[1], recStringArray[2]))
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.deleteFile(recStringArray[1]).encode())
+        elif (commandCode == 12):
+            conn.sendall(self.logout().encode())
+            return True
+        
+        elif (commandCode == 13):
+            if len(recStringArray) != 2:
+                 #send error response: improper command
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.createGroup(recStringArray[1]).encode())
+        elif (commandCode == 14):
+            if len(recStringArray) != 3:
+                 #send error response: improper command
+                conn.sendall("Improper command".encode())
+                return False
+            conn.sendall(self.addUserToGroup(recStringArray[1], recStringArray[2]).encode())
         else:
-            conn.sendall("Improper command")
-            return
+            conn.sendall("Improper command".encode())
+            return False
 
     def login(self, username, password):
         if self.current_user != None:
@@ -148,17 +171,21 @@ class Server:
             returnStr += "The following files have been changed by an unauthorized user since your last login: \n"
             for file in self.getPlainTextFilePaths(compFiles):
                 returnStr += file + "\n"
-        return returnStr + "Successfully login!"
+        return '1\n'+returnStr + "Successfully login!"
 
     def registerUser(self, username, password):
         if (self.db.check_user_exists(username) != None):
             return "User already exists"
         if (self.current_user != None):
             return "Already logged in, cannot register user!"
+        print('a')
         userObj = self.db.register_user_in_database(username, password)
         # Create user home directory 
+        print('b')
         outparams = self.file_manager.createDirectory(username)
+        print('c')
         file_name_hash = self.file_manager.generateIntergityCodeForDirectory(outparams[0])
+        print('d')
         self.db.create_home_dir(outparams[2], 
                         outparams[0], 
                         outparams[3], 
@@ -237,15 +264,20 @@ class Server:
             return "Must be logged in!"
         enc_file_name = ""
         fileExists = False
+        print('1')
         general_lookup_table = self.db.generate_general_lookup_table()
+        print('2')
         lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
+        print('3')
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
+        print('4')
         for enc_file in enc_file_list:
             dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
                 fileExists = True
                 enc_file_name = enc_file_list[enc_file][1]
                 break
+        print('5')
         if (not fileExists):
             return "File does not exist in current directory"
         abs_path = os.path.join(self.file_manager.current_path, enc_file_name)
@@ -259,9 +291,15 @@ class Server:
                 break
         if (not havePermission):
             return "Do not have permission to run this command"
+        print('6')
         fileObj = self.db.check_file_exists(enc_abs_path)
+        print('7')
         if (fileObj.is_dir):
             return "Is a directory, cannot display!"
+        print('8')
+        ans = self.file_manager.displayFileContents(filename, lookup_table)
+        if ans == '':
+            return '\n'
         return self.file_manager.displayFileContents(filename, lookup_table)
 
     def editFile(self, filename, contents):
@@ -549,6 +587,23 @@ class Server:
         for cleanedPathEle in cleanedPathArr:
             cleaned_path += "\\" + cleanedPathEle
         return cleaned_path
+    
+    def createGroup(self,groupname):
+        if self.db.check_group_exists(groupname) != None:
+            return "Group already exists"
+        self.db.create_group_in_database(groupname)
+        return "Group successfuly registered"
+
+    def addUserToGroup(self,username, groupname):
+        user = self.db.check_user_exists(username)
+        group = self.db.check_group_exists(groupname)
+        if user == None:
+            return "Specified user does not exist"
+        if group == None:
+            return "Specified group does not exist"
+        if not self.db.add_user_to_group(user, group):
+            return "User already exists in group"
+        return "User added to group"
 
 def main():
     server = Server(HOST, PORT)

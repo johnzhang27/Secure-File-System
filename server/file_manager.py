@@ -217,12 +217,16 @@ class FileManager:
         Returns: decrypted contents
         """
 
+        print('11')
         file_list = self.getFileListInCurrentDir(complete_file_dic)
+        print('22')
         contents = ''
         for f in file_list.keys():
             tmp = self.DecryptFileName(file_list[f][1],file_list[f][0])
             if tmp == fileName:
                 contents = self.DecryptFile(file_list[f][1],file_list[f][0])
+        print('33')
+        print(contents)
         return contents
 
 
