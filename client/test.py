@@ -11,10 +11,15 @@ def parseCommand(command):
 ans_list = tmp.createDirectory("JJJ")
 # ans_list = parseCommand(ans)
 # print(ans_list)
+
+
 complete_file_dic = {}
 complete_file_dic[ans_list[2]] = (ans_list[3], ans_list[0])
+
+
 lt2 = tmp.generateLookupTable(complete_file_dic)
 tmp.changeDirectory("JJJ", lt2)
+
 print("encrypted current directory is: "+ os.getcwd())
 print("full path: " + ans_list[1])
 print("current encrypted directory is: " + ans_list[0])
@@ -64,6 +69,11 @@ tmp.changeDirectory("../", lt2)
 print("real directory is: " + tmp.current_path)
 
 print("fake directory is: " + tmp.relative_path)
+
+ans1, ans2 = tmp.generateIntegrityCode("/Users/jz/Desktop/ECE422/new/Secure-File-System/client/hash_test.txt")
+print(ans1, ans2)
+
+print(tmp.verifyIntegrityCode("/Users/jz/Desktop/ECE422/new/Secure-File-System/client/hash_test.txt", ans1, ans2))
 
 # Jason needs 
 # client sends relative path

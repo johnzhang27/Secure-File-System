@@ -25,7 +25,7 @@ class Client:
         print("Setting up client")
         self.__host = host
         self.__port = port
-        self.__current_dir - '/home'
+        self.__current_dir = '/home'
         try:
             self.__s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.__s.connect((self.__host, self.__port))
@@ -45,10 +45,10 @@ class Client:
         res_ = self.__s.recv(2048).decode()
         # print(res_)
         # parse message
-        ack_, errorMsg_ = self.__parseMsg(res_)
-        print(errorMsg_)
+        # ack_, errorMsg_ = self.__parseMsg(res_)
+        print(res_)
 
-        return
+        return res_
 
     def __parseMsg(self, msg):
         # TODO I need to receive and return the group ID
@@ -75,8 +75,8 @@ class Client:
             res_ = self.__s.recv(2048).decode()
             # print(res_)
             # parse message
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s %s" %(fileName, err))
@@ -98,8 +98,8 @@ class Client:
             res_ = self.__s.recv(2048).decode()
             # print(res_)
             # parse message
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s %s" %(fileName, err))
@@ -116,8 +116,8 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s %s" %(fileName, err))
@@ -132,8 +132,6 @@ class Client:
             data = ff.read()    
             integrity_content = hashlib.md5(data).hexdigest()
 
-        # print(integrity_filename)
-        # print(integrity_content)
         return integrity_filename, integrity_content
     
     def __verifyIntegrityCode(self, filename, integrity_filename, integrity_content):
@@ -155,8 +153,8 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s %s" %(directoryName, err))
@@ -173,11 +171,11 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
             # if success, update the current directory
-            if (not ack_):
-                self.__current_dir  = errorMsg_
+            # if (not ack_):
+            #     self.__current_dir  = errorMsg_
 
         except Exception as err:
             print ("Error: %s %s" %(directoryName, err))
@@ -195,8 +193,8 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s" %(err))
@@ -211,8 +209,8 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s" %(err))
@@ -226,8 +224,8 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s" %(err))
@@ -241,8 +239,8 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s" %(err))
@@ -257,14 +255,49 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            ack_, errorMsg_ = self.__parseMsg(res_)
-            print(errorMsg_)
+            # ack_, errorMsg_ = self.__parseMsg(res_)
+            print(res_)
 
         except Exception as err:
             print ("Error: %s" %(err))
 
         return
+    
+    def __exit(self):
+        tmp_string = "12"
+        self.__s.send(tmp_string.encode())
 
+        res_ = self.__s.recv(2048).decode()
+        
+        # ack_, errorMsg_ = self.__parseMsg(res_)
+        print(res_)
+
+    def __delete(self, fileName):
+        tmp_string = "11 {}".format(fileName)
+        self.__s.send(tmp_string.encode())
+
+        res_ = self.__s.recv(2048).decode()
+        
+        # ack_, errorMsg_ = self.__parseMsg(res_)
+        print(res_)
+
+    def __createGroup(self, groupName):
+        tmp_string = "13 {}".format(groupName)
+        self.__s.send(tmp_string.encode())
+
+        res_ = self.__s.recv(2048).decode()
+        
+        # ack_, errorMsg_ = self.__parseMsg(res_)
+        print(res_)
+
+    def __addToGroup(self, userName, groupName):
+        tmp_string = "14 {} {}".format(userName, groupName)
+        self.__s.send(tmp_string.encode())
+
+        res_ = self.__s.recv(2048).decode()
+        
+        # ack_, errorMsg_ = self.__parseMsg(res_)
+        print(res_)
     # command dispatcher
     def __dispatchCommand(self, commandArray):
         match commandArray[0]:
@@ -293,8 +326,10 @@ class Client:
 
             case "ls":
                 self.__listDir()
-
+            case "del":
+                self.__delete(commandArray[1])
             case "exit":
+                self.__exit()
                 print("Exit the SFS.")
                 return 0
             case "rename":
@@ -306,6 +341,10 @@ class Client:
             case "removep":
                 self.__removePermission(commandArray[1], commandArray[2])
 
+            case "createG":
+                self.__createGroup(commandArray[1])
+            case "add2G":
+                self.__addToGroup(commandArray[1], commandArray[2])
             case __:
                 print("Not a valid command, please try again.")
         return 1
@@ -336,13 +375,9 @@ class Client:
             username_ = input("Please Enter Your Username: ")
             password_ = pwinput.pwinput(prompt='Please Enter Your Password: ')
 
-            login_flag, group_id_ = self.__login(username_, password_)
+            login = self.__login(username_, password_)
             # if login succeed, break the while loop
-            if(login_flag):
-                U.setUsername(username_)
-                U.setPassword(password_)
-                U.setGroup(group_id_)
-                print("group ID is: " + U.getGroup())
+            if(login[0] == '1'):
                 break
         
         # # group_ = 1
