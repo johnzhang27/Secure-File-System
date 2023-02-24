@@ -418,7 +418,7 @@ class Server:
                 returnStr += file + "\n"
             return returnStr[:-1]
         havePermission = False
-        for enc_path in lookup_table:
+        for enc_path in permitted_lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, permitted_lookup_table[enc_path][0])
             if dec_path == self.file_manager.current_path:
                 enc_abs_path = enc_path
