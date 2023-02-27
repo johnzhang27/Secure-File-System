@@ -433,6 +433,8 @@ class Server:
         returnStr = ""
         for file in self.file_manager.listDir(lookup_table):
             returnStr += file + "\n"
+        if returnStr == "":
+            return '\n'
         return returnStr[:-1]
 
     def renameFile(self, old_file_name, new_file_name):
