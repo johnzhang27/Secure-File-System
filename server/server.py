@@ -120,13 +120,13 @@ class Server:
                  #send error response: improper command
                 conn.sendall("Improper command".encode())
                 return False
-            conn.sendall(self.grantPermission(recStringArray[1], recStringArray[2]).encode())
-        elif (commandCode == 10):
-            if len(recStringArray) != 3:
-                 #send error response: improper command
-                conn.sendall("Improper command".encode())
-                return False
-            conn.sendall(self.removePermission(recStringArray[1], recStringArray[2]).encode())
+            conn.sendall(self.changePermissionMode(recStringArray[1], recStringArray[2]).encode())
+        # elif (commandCode == 10):
+        #     if len(recStringArray) != 3:
+        #          #send error response: improper command
+        #         conn.sendall("Improper command".encode())
+        #         return False
+        #     conn.sendall(self.removePermission(recStringArray[1], recStringArray[2]).encode())
         elif (commandCode == 11):
             if len(recStringArray) != 2:
                  #send error response: improper command
@@ -472,17 +472,13 @@ class Server:
         self.db.rename_file(fileObj, outparams[2], outparams[0], file_name_hash)  
         return "File " + old_file_name + " renamed to " + new_file_name
 
-    # NOTE: Granting permission logic may change
-    def grantPermission(self, username, filename):
+    def changePermissionMode(self, filename, permission_mode):
         if self.current_user == None:
             return "Must be logged in to run command!"
-        userObj = self.db.check_user_exists(username)
-        if (userObj == None):
-            return "Specified user does not exist"
         abs_path = os.path.join(self.file_manager.current_path, filename)
-        group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
+        gen_lookup_table = self.db.generate_general_lookup_table()
         lookup_table = self.db.generate_owned_lookup_table(self.current_user)
-        enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
+        enc_file_list = self.file_manager.getFileListInCurrentDir(gen_lookup_table)
         for enc_file in enc_file_list:
             dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
@@ -493,9 +489,6 @@ class Server:
         enc_abs_path = ""
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
-            enc_file_pair = os.path.split(dec_path)
-            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == abs_path:
                 havePermission = True
                 enc_abs_path = enc_path
@@ -503,45 +496,9 @@ class Server:
         if (not havePermission):
             return "Do not have permission to do that command"
         fileObj = self.db.check_file_exists(enc_abs_path)
-        if (not self.db.grant_permissions(fileObj, userObj)):
-            return "User already has permission to that file"
-        return "Permission granted!"
-
-    # NOTE: Granting permission logic may change
-    def removePermission(self, username, filename):
-        if self.current_user == None:
-            return "Must be logged in to run command!"
-        userObj = self.db.check_user_exists(username)
-        if (userObj == None):
-            return "Specified user does not exist"
-        abs_path = os.path.join(self.file_manager.current_path, filename)
-        group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
-        lookup_table = self.db.generate_owned_lookup_table(self.current_user)
-        enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
-        for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
-            if dec_file == filename:
-                fileExists = True
-                break
-        if (not fileExists):
-            return "File does not exist in current directory"
-        enc_abs_path = ""
-        for enc_path in lookup_table:
-            dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
-            enc_file_pair = os.path.split(dec_path)
-            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-            dec_path = os.path.join(enc_file_pair[0], dec_file)
-            if dec_path == abs_path:
-                havePermission = True
-                enc_abs_path = enc_path
-                break
-        if (not havePermission):
-            return "Do not have permission to do that command"
-        fileObj = self.db.check_file_exists(enc_abs_path)
-        returnedTuple =  self.db.grant_permissions(fileObj, userObj)[0]
-        if (not returnedTuple[0]):
-            return returnedTuple[1]
-        return "Permission removed!"
+        if (not self.db.set_permission_mode(fileObj, permission_mode)):
+            return "Permission could not be changed"
+        return "Permission changed"
 
     def checkIntergityOfFiles(self):
         if self.current_user == None:

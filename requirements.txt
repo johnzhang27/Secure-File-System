@@ -12,7 +12,7 @@ pipreqs==0.4.11
 pwinput==1.0.2
 pycparser==2.21
 requests==2.28.2
-SQLAlchemy==2.0.3
+SQLAlchemy==1.4.46
 typing_extensions==4.4.0
 urllib3==1.26.14
 websocket==0.2.1

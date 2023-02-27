@@ -10,8 +10,15 @@ import typing
 
 Base = sqlorm.declarative_base()
 
-association_table = sqlalchemy.Table(
-    "USER_FILE_DATA",
+rw_association_table = sqlalchemy.Table(
+    "USER_RW_FILE_DATA",
+    Base.metadata,
+    sqlalchemy.Column("user_id", sqlalchemy.ForeignKey("USER_DATA.user_id"), primary_key=True),
+    sqlalchemy.Column("abs_path", sqlalchemy.ForeignKey("FILE_DATA.abs_path"), primary_key=True),
+)
+
+access_association_table = sqlalchemy.Table (
+    "USER_ACCESS_FILE_DATA",
     Base.metadata,
     sqlalchemy.Column("user_id", sqlalchemy.ForeignKey("USER_DATA.user_id"), primary_key=True),
     sqlalchemy.Column("abs_path", sqlalchemy.ForeignKey("FILE_DATA.abs_path"), primary_key=True),
@@ -24,9 +31,10 @@ class User(Base):
     group_id = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("GROUP_DATA.group_id"))
     group = sqlorm.relationship("Group", back_populates="users")
     owned_files = sqlorm.relationship("File", back_populates="owner")
-    permitted_files = sqlorm.relationship("File",
-                                          secondary=association_table,
-                                          back_populates="permitted_users")
+    rw_files = sqlorm.relationship("File", secondary=rw_association_table,
+                                           back_populates="rw_users")
+    access_files = sqlorm.relationship("File", secondary=access_association_table,
+                                               back_populates="access_users")
 class Group(Base):
     __tablename__ = "GROUP_DATA"
     group_id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
@@ -38,6 +46,7 @@ class File(Base):
     file_name = sqlalchemy.Column(sqlalchemy.String)
     file_hash = sqlalchemy.Column(sqlalchemy.String)
     file_name_hash = sqlalchemy.Column(sqlalchemy.String)
+    permission_mode = sqlalchemy.Column(sqlalchemy.String, default="USER")
     key = sqlalchemy.Column(sqlalchemy.String)
     is_dir = sqlalchemy.Column(sqlalchemy.Boolean)
     is_home_dir = sqlalchemy.Column(sqlalchemy.Boolean)
@@ -45,6 +54,9 @@ class File(Base):
     parent_dir = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("FILE_DATA.abs_path"))
     owner_id = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("USER_DATA.user_id"))
     owner = sqlorm.relationship("User", back_populates="owned_files")
-    permitted_users = sqlorm.relationship("User",
-                                          secondary=association_table,
-                                          back_populates="permitted_files")
+    rw_users = sqlorm.relationship("User",secondary=rw_association_table,
+                                          back_populates="rw_files")
+    access_users = sqlorm.relationship("File", secondary=access_association_table,
+                                               back_populates="access_files")
+  
+            
