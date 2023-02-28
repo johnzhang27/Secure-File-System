@@ -32,7 +32,7 @@ class User(Base):
     password = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     group_id = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("GROUP_DATA.group_id"))
     group = sqlorm.relationship("Group", back_populates="users")
-    owned_files = sqlorm.relationship("File", back_populates="owner")
+    owned_files = sqlorm.relationship("File", back_populates="owner", cascade="all, delete")
     rw_files = sqlorm.relationship("File", secondary=rw_association_table,
                                            back_populates="rw_users")
     access_files = sqlorm.relationship("File", secondary=access_association_table,

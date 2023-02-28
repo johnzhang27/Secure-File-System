@@ -18,7 +18,7 @@ class Server:
         self.host = host
         self.port = port
         self.socket = None
-        self.db = database_manager.DatabaseManager()
+        self.db = database_manager.DatabaseManager("data.db")
         self.file_manager = file_manager.FileManager()
         self.current_user = None
 
@@ -181,7 +181,7 @@ class Server:
     def createFile(self, filename):
         if self.current_user == None:
             return "Must be logged in!"
-        lookup_table = self.db.generate_rw_lookup_table(self.current_user)
+        lookup_table = self.db.generate_owned_lookup_table(self.current_user)
         general_lookup_table = self.db.generate_general_lookup_table()
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
         for enc_file in enc_file_list:
@@ -317,7 +317,7 @@ class Server:
     def createDirectory(self, directoryname):
         if self.current_user == None:
             return "Must be logged in!"
-        lookup_table = self.db.generate_rw_lookup_table(self.current_user)
+        lookup_table = self.db.generate_owned_lookup_table(self.current_user)
         general_lookup_table = self.db.generate_general_lookup_table()
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
         for enc_file in enc_file_list:
@@ -394,24 +394,15 @@ class Server:
             for file in self.file_manager.listDir(lookup_table):
                 returnStr += file + "\n"
             return returnStr[:-1]
-        havePermission = False
-        for enc_path in permitted_lookup_table:
-            dec_path = self.file_manager.DecryptFileName(enc_path, permitted_lookup_table[enc_path][0])
-            if dec_path == self.file_manager.current_path:
-                enc_abs_path = enc_path
-                havePermission = True
-                break
-        # do not have r/w permissions for the current dir, display all contents as encrypted
-        if (not havePermission):
-            returnStr = ""
-            for file in os.listdir():
-                returnStr += file + "\n"
-            return returnStr[:-1]
         returnStr = ""
-        for file in self.file_manager.listDir(lookup_table):
-            returnStr += file + "\n"
-        return returnStr[:-1]
-
+        enc_file_list = self.file_manager.getFileListInCurrentDir(lookup_table)
+        for enc_file in enc_file_list:
+            if enc_file in permitted_lookup_table:
+                returnStr += self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0]) + "\n"
+            else:
+                returnStr += enc_file_list[enc_file][1] + "\n"
+        return returnStr[:-1] 
+    
     def renameFile(self, old_file_name, new_file_name):
         if self.current_user == None:
             return "Must be logged in!"
