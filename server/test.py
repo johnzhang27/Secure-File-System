@@ -85,6 +85,8 @@ def main():
             print(deleteFile(commandArr[1]))
         elif(commandArr[0] == "reset"):
             reset_database()
+        elif(commandArr[0] == "changeP"):
+            print(changePermissionMode(commandArr[1], commandArr[2]))
         elif (commandArr[0] == "logout"):
             print(logout())
         elif (commandArr[0] == "exit"):
@@ -500,6 +502,36 @@ def getPlainTextFilePath(dec_path):
     for cleanedPathEle in cleanedPathArr:
         cleaned_path += "/" + cleanedPathEle
     return cleaned_path
-
+def changePermissionMode(filename, permission_mode):
+    if current_user == None:
+        return "Must be logged in to run command!"
+    # abs_path = os.path.join(file_manager.current_path, filename)
+    gen_lookup_table = db.generate_general_lookup_table()
+    lookup_table = db.generate_owned_lookup_table(current_user)
+    enc_file_list = file_manager.getFileListInCurrentDir(gen_lookup_table)
+    enc_file_name = ""
+    for enc_file in enc_file_list:
+        dec_file = file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
+        if dec_file == filename:
+            fileExists = True
+            enc_file_name = enc_file_list[enc_file][1]
+            break
+    if (not fileExists):
+        return "File does not exist in current directory"
+    enc_abs_path = ""
+    havePermission = False
+    abs_path = os.path.join(file_manager.current_path, enc_file_name)
+    for enc_path in lookup_table:
+        dec_path = file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
+        if dec_path == abs_path:
+            havePermission = True
+            enc_abs_path = enc_path
+            break
+    if (not havePermission):
+        return "Do not have permission to do that command"
+    fileObj = db.check_file_exists(enc_abs_path)
+    if (not db.set_permission_mode(fileObj, permission_mode)):
+        return "Permission could not be changed"
+    return "Permission changed"
 if __name__ == "__main__":
     main()
