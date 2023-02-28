@@ -15,7 +15,7 @@ class DatabaseManager:
     
     # Constructor
     def __init__(self):
-        self.engine = sqlalchemy.create_engine("sqlite:///test_data.db", echo=True)
+        self.engine = sqlalchemy.create_engine("sqlite:///test_data.db")
         self.session = sqlalchemy.orm.Session(self.engine)
 
     # Create tables in empty database
