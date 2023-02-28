@@ -1,20 +1,16 @@
 import socket
-import sys
 import os
 import database_manager
 import file_manager
-import sqlalchemy
 import traceback
 
-# https://docs.sqlalchemy.org/en/20/tutorial/engine.html
-# https://docs.sqlalchemy.org/en/20/orm/quickstart.html
-# https://docs.sqlalchemy.org/en/20/core/engines.html
+# Server of the SFS
+
+# Socket setup and config based on:
 # https://github.com/aianta/cmput404-tcp-lab
 
 HOST = "127.0.0.1"
 PORT = 8000
-
-# TO DO: encrypting usernames and password
 
 class Server:
 
@@ -120,30 +116,23 @@ class Server:
                  #send error response: improper command
                 conn.sendall("Improper command".encode())
                 return False
-            conn.sendall(self.grantPermission(recStringArray[1], recStringArray[2]).encode())
+            conn.sendall(self.changePermissionMode(recStringArray[1], recStringArray[2]).encode())
         elif (commandCode == 10):
-            if len(recStringArray) != 3:
-                 #send error response: improper command
-                conn.sendall("Improper command".encode())
-                return False
-            conn.sendall(self.removePermission(recStringArray[1], recStringArray[2]).encode())
-        elif (commandCode == 11):
             if len(recStringArray) != 2:
                  #send error response: improper command
                 conn.sendall("Improper command".encode())
                 return False
             conn.sendall(self.deleteFile(recStringArray[1]).encode())
-        elif (commandCode == 12):
+        elif (commandCode == 11):
             conn.sendall(self.logout().encode())
             return True
-        
-        elif (commandCode == 13):
+        elif (commandCode == 12):
             if len(recStringArray) != 2:
                  #send error response: improper command
                 conn.sendall("Improper command".encode())
                 return False
             conn.sendall(self.createGroup(recStringArray[1]).encode())
-        elif (commandCode == 14):
+        elif (commandCode == 13):
             if len(recStringArray) != 3:
                  #send error response: improper command
                 conn.sendall("Improper command".encode())
@@ -178,14 +167,10 @@ class Server:
             return "User already exists"
         if (self.current_user != None):
             return "Already logged in, cannot register user!"
-        print('a')
         userObj = self.db.register_user_in_database(username, password)
         # Create user home directory 
-        print('b')
         outparams = self.file_manager.createDirectory(username)
-        print('c')
         file_name_hash = self.file_manager.generateIntergityCodeForDirectory(outparams[0])
-        print('d')
         self.db.create_home_dir(outparams[2], 
                         outparams[0], 
                         outparams[3], 
@@ -196,7 +181,7 @@ class Server:
     def createFile(self, filename):
         if self.current_user == None:
             return "Must be logged in!"
-        lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
+        lookup_table = self.db.generate_rw_lookup_table(self.current_user)
         general_lookup_table = self.db.generate_general_lookup_table()
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
         for enc_file in enc_file_list:
@@ -229,7 +214,7 @@ class Server:
         if self.current_user == None:
             return "Must be logged in!"
         general_lookup_table = self.db.generate_general_lookup_table()
-        lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
+        lookup_table = self.db.generate_rw_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
         enc_file_name = ""
         fileExists = False
@@ -264,20 +249,15 @@ class Server:
             return "Must be logged in!"
         enc_file_name = ""
         fileExists = False
-        print('1')
         general_lookup_table = self.db.generate_general_lookup_table()
-        print('2')
-        lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
-        print('3')
+        lookup_table = self.db.generate_rw_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
-        print('4')
         for enc_file in enc_file_list:
             dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
                 fileExists = True
                 enc_file_name = enc_file_list[enc_file][1]
                 break
-        print('5')
         if (not fileExists):
             return "File does not exist in current directory"
         abs_path = os.path.join(self.file_manager.current_path, enc_file_name)
@@ -291,12 +271,9 @@ class Server:
                 break
         if (not havePermission):
             return "Do not have permission to run this command"
-        print('6')
         fileObj = self.db.check_file_exists(enc_abs_path)
-        print('7')
         if (fileObj.is_dir):
             return "Is a directory, cannot display!"
-        print('8')
         ans = self.file_manager.displayFileContents(filename, lookup_table)
         if ans == '':
             return '\n'
@@ -306,7 +283,7 @@ class Server:
         if self.current_user == None:
             return "Must be logged in!"
         general_lookup_table = self.db.generate_general_lookup_table()
-        lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
+        lookup_table = self.db.generate_rw_lookup_table(self.current_user)
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
         enc_file_name = ""
         fileExists = False
@@ -340,7 +317,7 @@ class Server:
     def createDirectory(self, directoryname):
         if self.current_user == None:
             return "Must be logged in!"
-        lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
+        lookup_table = self.db.generate_rw_lookup_table(self.current_user)
         general_lookup_table = self.db.generate_general_lookup_table()
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
         for enc_file in enc_file_list:
@@ -375,7 +352,7 @@ class Server:
             self.file_manager.changeDirectory(directoryname, {})
             return "Current directory: " + self.file_manager.relative_path
         fileExists = False
-        group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
+        access_lookup_table = self.db.generate_access_lookup_table(self.current_user)
         general_lookup_table = self.db.generate_general_lookup_table()
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
         enc_dir_name = ""
@@ -390,8 +367,8 @@ class Server:
         havePermission = False
         enc_abs_path = ""
         abs_path = os.path.join(self.file_manager.current_path, enc_dir_name)
-        for enc_path in group_lookup_table:
-            dec_path = self.file_manager.DecryptFileName(enc_path, group_lookup_table[enc_path][0])
+        for enc_path in access_lookup_table:
+            dec_path = self.file_manager.DecryptFileName(enc_path, access_lookup_table[enc_path][0])
             if dec_path == abs_path:
                 havePermission = True
                 enc_abs_path = enc_path
@@ -410,7 +387,7 @@ class Server:
         if self.current_user == None:
             return "Must be logged in!"
         lookup_table = self.db.generate_general_lookup_table()
-        permitted_lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
+        permitted_lookup_table = self.db.generate_rw_lookup_table(self.current_user)
         # at root, allow users to see directories
         if self.file_manager.current_path == self.file_manager.home_path:
             returnStr = ""
@@ -439,9 +416,10 @@ class Server:
         if self.current_user == None:
             return "Must be logged in!"
         fileExists = False
-        lookup_table = self.db.generate_permitted_lookup_table(self.current_user)
+        lookup_table = self.db.generate_rw_lookup_table(self.current_user)
         general_lookup_table = self.db.generate_general_lookup_table()
         enc_file_list = self.file_manager.getFileListInCurrentDir(general_lookup_table)
+        enc_old_file_name = ""
         for enc_file in enc_file_list:
             dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == old_file_name:
@@ -472,30 +450,27 @@ class Server:
         self.db.rename_file(fileObj, outparams[2], outparams[0], file_name_hash)  
         return "File " + old_file_name + " renamed to " + new_file_name
 
-    # NOTE: Granting permission logic may change
-    def grantPermission(self, username, filename):
+    def changePermissionMode(self, filename, permission_mode):
         if self.current_user == None:
             return "Must be logged in to run command!"
-        userObj = self.db.check_user_exists(username)
-        if (userObj == None):
-            return "Specified user does not exist"
-        abs_path = os.path.join(self.file_manager.current_path, filename)
-        group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
+        gen_lookup_table = self.db.generate_general_lookup_table()
         lookup_table = self.db.generate_owned_lookup_table(self.current_user)
-        enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
+        enc_file_list = self.file_manager.getFileListInCurrentDir(gen_lookup_table)
+        enc_file_name = ""
+        fileExists = False
         for enc_file in enc_file_list:
             dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
             if dec_file == filename:
                 fileExists = True
+                enc_file_name = enc_file_list[enc_file][1]
                 break
         if (not fileExists):
             return "File does not exist in current directory"
         enc_abs_path = ""
+        abs_path = os.path.join(self.file_manager.current_path, enc_file_name)
+        havePermission = False
         for enc_path in lookup_table:
             dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
-            enc_file_pair = os.path.split(dec_path)
-            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-            dec_path = os.path.join(enc_file_pair[0], dec_file)
             if dec_path == abs_path:
                 havePermission = True
                 enc_abs_path = enc_path
@@ -503,45 +478,9 @@ class Server:
         if (not havePermission):
             return "Do not have permission to do that command"
         fileObj = self.db.check_file_exists(enc_abs_path)
-        if (not self.db.grant_permissions(fileObj, userObj)):
-            return "User already has permission to that file"
-        return "Permission granted!"
-
-    # NOTE: Granting permission logic may change
-    def removePermission(self, username, filename):
-        if self.current_user == None:
-            return "Must be logged in to run command!"
-        userObj = self.db.check_user_exists(username)
-        if (userObj == None):
-            return "Specified user does not exist"
-        abs_path = os.path.join(self.file_manager.current_path, filename)
-        group_lookup_table = self.db.generate_group_permitted_lookup_table(self.current_user)
-        lookup_table = self.db.generate_owned_lookup_table(self.current_user)
-        enc_file_list = self.file_manager.getFileListInCurrentDir(group_lookup_table)
-        for enc_file in enc_file_list:
-            dec_file = self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0])
-            if dec_file == filename:
-                fileExists = True
-                break
-        if (not fileExists):
-            return "File does not exist in current directory"
-        enc_abs_path = ""
-        for enc_path in lookup_table:
-            dec_path = self.file_manager.DecryptFileName(enc_path, lookup_table[enc_path][0])
-            enc_file_pair = os.path.split(dec_path)
-            dec_file = self.file_manager.DecryptFileName(enc_file_pair[1], group_lookup_table[enc_path][0])
-            dec_path = os.path.join(enc_file_pair[0], dec_file)
-            if dec_path == abs_path:
-                havePermission = True
-                enc_abs_path = enc_path
-                break
-        if (not havePermission):
-            return "Do not have permission to do that command"
-        fileObj = self.db.check_file_exists(enc_abs_path)
-        returnedTuple =  self.db.grant_permissions(fileObj, userObj)[0]
-        if (not returnedTuple[0]):
-            return returnedTuple[1]
-        return "Permission removed!"
+        if (not self.db.set_permission_mode(fileObj, permission_mode)):
+            return "Permission could not be changed"
+        return "Permission changed"
 
     def checkIntergityOfFiles(self):
         if self.current_user == None:
@@ -576,16 +515,16 @@ class Server:
         return plainAbsPaths
 
     def getPlainTextFilePath(self,dec_path):
-        dec_relative_path = os.path.join('\\home', os.path.relpath(dec_path, self.file_manager.home_path))
-        pathArray = dec_relative_path.split("\\")
+        dec_relative_path = os.path.join('/home', os.path.relpath(dec_path, self.file_manager.home_path))
+        pathArray = dec_relative_path.split("/")
         fileLookup = self.db.generate_file_lookup_table()
         cleanedPathArr = []
         for pathEle in pathArray[2:]:
             dec_file = self.file_manager.DecryptFileName(pathEle, fileLookup[pathEle])
             cleanedPathArr.append(dec_file)
-        cleaned_path = "\\home"
+        cleaned_path = "/home"
         for cleanedPathEle in cleanedPathArr:
-            cleaned_path += "\\" + cleanedPathEle
+            cleaned_path += "/" + cleanedPathEle
         return cleaned_path
     
     def createGroup(self,groupname):

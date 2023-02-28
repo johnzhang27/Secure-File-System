@@ -1,40 +1,74 @@
 import sqlalchemy
-import sqlalchemy.orm as sqlorm
 import database_models
 import bcrypt
+
+# Encrypting passwords:
 # https://www.makeuseof.com/encrypt-password-in-python-bcrypt/ 
 
+# SQLAlchemy setup and configuration:
+# https://docs.sqlalchemy.org/en/20/core/engines.html
+# https://docs.sqlalchemy.org/en/20/orm/quickstart.html
+# https://docs.sqlalchemy.org/en/14/core/metadata.html#sqlalchemy.schema.MetaData.drop_all
+
+# Manager class used to manage the SFS's database
 class DatabaseManager:
     
+    # Constructor
     def __init__(self):
         self.engine = sqlalchemy.create_engine("sqlite:///test_data.db")
         self.session = sqlalchemy.orm.Session(self.engine)
 
+    # Create tables in empty database
     def create_tables(self):
         database_models.Base.metadata.create_all(self.engine)
         print("Created database tables")
 
+    # Clear and reset tables in database
     def drop_tables(self):
         database_models.Base.metadata.drop_all(self.engine)
         print("Removed database tables")
     
+    # Close session with database
     def close_session(self):
         self.session.close()
 
+    # Add a user with specifed username and password to database
+    # Parameters: 
+    #   username - username of user
+    #   password - unencrypted password of user
     def register_user_in_database(self, username, password): 
         enc_password = bcrypt.hashpw(password.encode('utf-8') ,bcrypt.gensalt())
         created_user = database_models.User(
             user_id=username,
             password=enc_password)
         self.session.add(created_user)
+        self.configure_added_user_permissions(created_user)
         self.session.commit()
         return created_user
-
+    
+    # Grant newly added user permissions to files with ALL permission mode
+    # Parameters:
+    #   user - user object
+    def configure_added_user_permissions(self, user):
+        files = sqlalchemy.select(database_models.File)
+        for file in self.session.scalars(files):
+            if file.permission_mode == "ALL":
+                self.grant_access_permissions(file, user)
+                self.grant_rw_permissions(file, user)
+        self.session.commit()
+    
+    # Remove user from database
+    # Parameters:
+    #   user - user object
     def remove_user_in_database(self, user):
         self.session.delete(user)
         self.session.commit()
-        return
 
+    # Check if user exists
+    # Parameters:
+    #   username - username of user
+    # Returns:
+    #   user object corresponding to user if exists, None if not
     def check_user_exists(self, username):
         users = sqlalchemy.select(database_models.User)
         for user in self.session.scalars(users):
@@ -56,7 +90,6 @@ class DatabaseManager:
     def remove_group_from_database(self, group):
         self.session.delete(group)
         self.session.commit()
-        return
 
     def check_group_exists(self, groupname):
         groups = sqlalchemy.select(database_models.Group)
@@ -69,14 +102,31 @@ class DatabaseManager:
         if user in group.users:
             return False
         group.users.append(user)
+        self.configure_add_user_to_group_permissions(user, group)
         self.session.commit()
         return True
+    
+    def configure_add_user_to_group_permissions(self, user, group):
+        for group_user in group.users:
+            for file in group_user.owned_files:
+                if file.permission_mode == "GROUP":
+                    self.grant_rw_permissions(file, user)
+        self.session.commit()
 
     def remove_user_from_group(self, user, group):
         if user not in group.users:
             return
         group.users.remove(user)
+        self.configure_remove_user_from_group_permissions(user, group)
         self.session.commit()
+
+    def configure_remove_user_from_group_permissions(self, user, group):
+        for group_user in group.users:
+            for file in group_user.owned_files:
+                if file.permission_mode == "GROUP":
+                    self.remove_rw_permissions(file, user)
+        self.session.commit()
+
 
     def create_file(self, abspath, filename, file_key, user, is_dir, parent_dir, file_name_hash="", file_hash=""):
         file = database_models.File(abs_path=abspath, 
@@ -125,33 +175,134 @@ class DatabaseManager:
                 return file
         return None
 
-    def check_group_permissions(self, file, requesting_user):
+    def check_access_permissions(self, file, requesting_user):
         owning_user = file.owner
         owning_group = owning_user.group
-        if requesting_user in owning_group.users:
+        if requesting_user in owning_group.users or requesting_user in file.access_users:
             return True
         else:
             return False
 
-    def check_file_permissions(self, file, requesting_user):
-        if requesting_user in file.permitted_users or file.owner == requesting_user:
+    def check_rw_permissions(self, file, requesting_user):
+        if requesting_user in file.rw_users or file.owner == requesting_user:
             return True
         else:
             return False
-
-    def grant_permissions(self, file, requesting_user):
-        if (file.owner == requesting_user or requesting_user in file.permitted_users):
+    
+    # modes: USER, GROUP, ALL
+    def set_permission_mode(self, file, new_mode):
+        if file.permission_mode == "USER":
+            if new_mode == "USER":
+                return False
+            elif new_mode == "GROUP":
+                if file.owner.group == None:
+                    file.permission_mode = new_mode
+                    self.session.commit()
+                    return True
+                for user in file.owner.group.users:
+                    self.grant_rw_permissions(file, user)
+                file.permission_mode = new_mode
+                self.session.commit()
+                return True
+            elif new_mode == "ALL":
+                users = sqlalchemy.select(database_models.User)
+                if file.owner.group != None:
+                    for user in self.session.scalars(users):
+                        self.grant_access_permissions(file, user)
+                        self.grant_rw_permissions(file, user)
+                for user in self.session.scalars(users):
+                    if file.owner.group != None and user not in file.owner.group.users:
+                        self.grant_access_permissions(file, user)
+                        self.grant_rw_permissions(file, user)
+                file.permission_mode = new_mode
+                self.session.commit()
+                return True
+            else:
+                return False
+        elif file.permission_mode == "GROUP":
+            if new_mode == "USER":
+                if file.owner.group == None:
+                    file.permission_mode = new_mode
+                    return True
+                for user in file.owner.group.users:
+                    self.remove_rw_permissions(file, user)
+                file.permission_mode = new_mode
+                self.session.commit()
+                return True
+            elif new_mode == "GROUP":  
+                return False
+            elif new_mode == "ALL":
+                users = sqlalchemy.select(database_models.User)
+                for user in self.session.scalars(users):
+                    if file.owner.group == None or user not in file.owner.group.users:
+                        self.grant_access_permissions(file, user)
+                        self.grant_rw_permissions(file, user)
+                file.permission_mode = new_mode
+                self.session.commit()
+                return True
+            else:
+                return False
+        elif file.permission_mode == "ALL":
+            if new_mode == "USER":
+                users = sqlalchemy.select(database_models.User)
+                for user in self.session.scalars(users):
+                    if file.owner.group == None or user not in file.owner.group.users:
+                        self.remove_access_permissions(file, user)
+                    self.remove_rw_permissions(file, user)
+                file.permission_mode = new_mode
+                self.session.commit()
+                return True
+            elif new_mode == "GROUP":
+                users = sqlalchemy.select(database_models.User)
+                for user in self.session.scalars(users):
+                    if file.owner.group == None or user not in file.owner.group.users:
+                        self.remove_access_permissions(file, user)
+                        self.remove_rw_permissions(file, user)
+                file.permission_mode = new_mode
+                self.session.commit()
+                return True
+            elif new_mode == "ALL":
+                return False
+            else:
+                return False
+        
+    def grant_rw_permissions(self, file, requesting_user):
+        if (file == None):
             return False
-        file.permitted_users.append(requesting_user)
+        if (file.owner == requesting_user or requesting_user in file.rw_users):
+            return False
+        file.rw_users.append(requesting_user)
         self.session.commit()
         return True
 
-    def remove_permissions(self, file, requesting_user):
+    def remove_rw_permissions(self, file, requesting_user):
+        if (file == None):
+            return False
         if (file.owner == requesting_user):
-            return (False, "Cannot remove permission from owner")
-        if (requesting_user not in file.permitted_users):
-            return (False, "Specified user does not have permission to that file!")
-        file.permitted_users.remove(requesting_user)
+            return (False, "Cannot remove read/write permission from owner")
+        if (requesting_user not in file.rw_users):
+            return (False, "Specified user does not have read/write permission to that file!")
+        file.rw_users.remove(requesting_user)
+        self.session.commit()
+        return (True, "Success")
+    
+    def grant_access_permissions(self, file, requesting_user):
+        if (file == None):
+            return False
+        if (file.owner == requesting_user or requesting_user in file.access_users):
+            return False
+        file.access_users.append(requesting_user)
+        self.session.commit()
+        return True
+
+    def remove_access_permissions(self, file, requesting_user):
+        if (file == None):
+            return False
+        if (file.owner == requesting_user):
+            return (False, "Cannot remove access permission from owner")
+        if (requesting_user not in file.rw_users):
+            return (False, "Specified user does not have access permission to that file!")
+        file.access_users.remove(requesting_user)
         self.session.commit()
         return (True, "Success")
 
@@ -175,13 +326,13 @@ class DatabaseManager:
         lookup_table = self.add_to_lookup_table(user.owned_files, lookup_table)
         return lookup_table
 
-    def generate_permitted_lookup_table(self, user):
+    def generate_rw_lookup_table(self, user):
         lookup_table = self.generate_owned_lookup_table(user)
-        lookup_table = self.add_to_lookup_table(user.permitted_files, lookup_table)
+        lookup_table = self.add_to_lookup_table(user.rw_files, lookup_table)
         return lookup_table
 
-    def generate_group_permitted_lookup_table(self, user):
-        lookup_table = self.generate_permitted_lookup_table(user)
+    def generate_access_lookup_table(self, user):
+        lookup_table = self.generate_rw_lookup_table(user)
         if user.group == None:
             return lookup_table
         for group_mem in user.group.users:
