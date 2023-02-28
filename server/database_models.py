@@ -1,7 +1,9 @@
 import sqlalchemy
 import sqlalchemy.orm as sqlorm
-import typing
 
+# Database models used in the SFS's database
+
+# Setting up SQlAlchemy models
 # https://www.tutorialspoint.com/sqlalchemy/
 # https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_orm_updating_objects.htm
 # https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_orm_deleting_related_objects.htm#:~:text=It%20is%20easy%20to%20perform,session%20and%20commit%20the%20action.
@@ -56,7 +58,7 @@ class File(Base):
     owner = sqlorm.relationship("User", back_populates="owned_files")
     rw_users = sqlorm.relationship("User",secondary=rw_association_table,
                                           back_populates="rw_files")
-    access_users = sqlorm.relationship("File", secondary=access_association_table,
+    access_users = sqlorm.relationship("User", secondary=access_association_table,
                                                back_populates="access_files")
   
             

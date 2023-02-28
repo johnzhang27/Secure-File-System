@@ -5,7 +5,29 @@ db = database_manager.DatabaseManager()
 def main():
     while True:
         command = input("Enter command: ")
-
+        commandArr = command.split()
+        if (commandArr[0] == "register"):
+            if (len(commandArr) != 3):
+                print("Improper command")
+                continue
+            print(registerUser(commandArr[1], commandArr[2]))
+        elif (commandArr[0] == "createGroup"):
+            if (len(commandArr) != 2):
+                print("Improper command")
+                continue
+        elif (commandArr[0] == "addUserToGroup"):
+            if (len(commandArr) != 3):
+                print("Improper command")
+                continue
+            print(addUserToGroup(commandArr[1], commandArr[2]))
+        elif(commandArr[0] == "reset"):
+            reset_database()
+        elif(commandArr[0] == "set_up"):
+            set_up_database()
+        elif (commandArr[0] == "exit"):
+            print("Exiting...")
+            break
+        
 def reset_database():
     db.drop_tables()
     db.create_tables()
