@@ -171,6 +171,8 @@ class DatabaseManager:
             if new_mode == "USER":
                 return False
             elif new_mode == "GROUP":
+                if file.owner.group == None:
+                    return False
                 for user in file.owner.group.users:
                     self.grant_rw_permissions(file, user)
                 return True

@@ -56,7 +56,7 @@ class File(Base):
     owner = sqlorm.relationship("User", back_populates="owned_files")
     rw_users = sqlorm.relationship("User",secondary=rw_association_table,
                                           back_populates="rw_files")
-    access_users = sqlorm.relationship("File", secondary=access_association_table,
+    access_users = sqlorm.relationship("User", secondary=access_association_table,
                                                back_populates="access_files")
   
             
