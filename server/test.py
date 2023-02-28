@@ -1,8 +1,9 @@
 import database_manager
 import file_manager
 import os
+import shutil
 
-# Test debugger to test server, treat this as a server side client, you input commands
+# Test debugger CLI to test server, treat this as a server side client, you input commands
 # and arguments and the system will execute them
 
 # logout - lets you log out
@@ -10,7 +11,7 @@ import os
 # Special command:
 #   reset - this will clear and reset the database
 
-db = database_manager.DatabaseManager()
+db = database_manager.DatabaseManager("data.db")
 current_user = None
 file_manager = file_manager.FileManager()
 
@@ -43,6 +44,16 @@ def main():
                 print("Improper command")
                 continue
             print(addUserToGroup(commandArr[1], commandArr[2]))
+        elif (commandArr[0] == "removeUser"):
+            if (len(commandArr) != 2):
+                print("Improper command")
+                continue
+            print(removeUser(commandArr[1]))
+        elif (commandArr[0] == "removeUserFromGroup"):
+            if (len(commandArr) != 3):
+                print("Improper command")
+                continue
+            print(removeUserFromGroup(commandArr[1], commandArr[2]))
         elif (commandArr[0] == "displayFile"):
             if (len(commandArr) != 2):
                 print("Improper command")
@@ -139,6 +150,34 @@ def registerUser(username, password):
                        file_name_hash=file_name_hash)
     return "User registered!"
 
+def removeUser(username):
+    global current_user
+    if (current_user != None):
+        return "Already logged in, cannot delete user!"
+    userObj = db.check_user_exists(username)
+    if (userObj == None):
+        return "User does not exist!"
+    homeDir = db.get_user_home_directory(userObj)
+    if (homeDir == None):
+        return "User does not have a home directory"
+    file_manager.deleteFile(username, db.generate_general_lookup_table())
+    db.remove_user_in_database(userObj)
+    return "User and files removed!"
+
+def removeUserFromGroup(username, groupname):
+    global current_user
+    if (current_user != None):
+        return "Already logged in, cannot remove user from group!"
+    user = db.check_user_exists(username)
+    group = db.check_group_exists(groupname)
+    if user == None:
+        return "Specified user does not exist"
+    if group == None:
+        return "Specified group does not exist"
+    if not db.remove_user_from_group(user, group):
+        return "User not in group"
+    return "User removed"
+    
 def createGroup(groupname):
     if db.check_group_exists(groupname) != None:
         return "Group already exists"
@@ -159,7 +198,7 @@ def addUserToGroup(username, groupname):
 def createFile(filename):
     if current_user == None:
         return "Must be logged in!"
-    lookup_table = db.generate_rw_lookup_table(current_user)
+    lookup_table = db.generate_owned_lookup_table(current_user)
     general_lookup_table = db.generate_general_lookup_table()
     enc_file_list = file_manager.getFileListInCurrentDir(general_lookup_table)
     for enc_file in enc_file_list:
@@ -293,7 +332,7 @@ def editFile(filename, contents):
 def createDirectory(directoryname):
     if current_user == None:
         return "Must be logged in!"
-    lookup_table = db.generate_rw_lookup_table(current_user)
+    lookup_table = db.generate_owned_lookup_table(current_user)
     general_lookup_table = db.generate_general_lookup_table()
     enc_file_list = file_manager.getFileListInCurrentDir(general_lookup_table)
     for enc_file in enc_file_list:
@@ -369,21 +408,13 @@ def displayDirectoryContent():
         for file in file_manager.listDir(lookup_table):
             returnStr += file + "\n"
         return returnStr[:-1]
-    havePermission = False
-    for enc_path in permitted_lookup_table:
-        dec_path = file_manager.DecryptFileName(enc_path, permitted_lookup_table[enc_path][0])
-        if dec_path == file_manager.current_path:
-            enc_abs_path = enc_path
-            havePermission = True
-            break
-    if (not havePermission):
-        returnStr = ""
-        for file in os.listdir():
-            returnStr += file + "\n"
-        return returnStr[:-1]
     returnStr = ""
-    for file in file_manager.listDir(lookup_table):
-        returnStr += file + "\n"
+    enc_file_list = file_manager.getFileListInCurrentDir(lookup_table)
+    for enc_file in enc_file_list:
+        if enc_file in permitted_lookup_table:
+            returnStr += file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0]) + "\n"
+        else:
+            returnStr += enc_file_list[enc_file][1] + "\n"
     return returnStr[:-1] 
 
 def renameFile(old_file_name, new_file_name):
@@ -417,7 +448,7 @@ def renameFile(old_file_name, new_file_name):
         return "Cannot rename home directory of user"
     outparams = file_manager.renameFile_public(old_file_name, lookup_table, new_file_name)
     if (fileObj.is_dir):
-        file_name_hash = file_manager.generateIntegrityCodeForDirectory(outparams[0])        
+        file_name_hash = file_manager.generateIntergityCodeForDirectory(outparams[0])        
     else:
         file_name_hash, file_hash =  file_manager.generateIntegrityCode(outparams[0], outparams[0])
     db.rename_file(fileObj, outparams[2], outparams[0], file_name_hash)  
@@ -502,6 +533,7 @@ def getPlainTextFilePath(dec_path):
     for cleanedPathEle in cleanedPathArr:
         cleaned_path += "/" + cleanedPathEle
     return cleaned_path
+
 def changePermissionMode(filename, permission_mode):
     if current_user == None:
         return "Must be logged in to run command!"
@@ -533,5 +565,6 @@ def changePermissionMode(filename, permission_mode):
     if (not db.set_permission_mode(fileObj, permission_mode)):
         return "Permission could not be changed"
     return "Permission changed"
+
 if __name__ == "__main__":
     main()

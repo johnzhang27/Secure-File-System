@@ -2,6 +2,8 @@ import sqlalchemy
 import database_models
 import bcrypt
 
+# Manager class used to manage the SFS's database
+
 # Encrypting passwords:
 # https://www.makeuseof.com/encrypt-password-in-python-bcrypt/ 
 
@@ -10,12 +12,11 @@ import bcrypt
 # https://docs.sqlalchemy.org/en/20/orm/quickstart.html
 # https://docs.sqlalchemy.org/en/14/core/metadata.html#sqlalchemy.schema.MetaData.drop_all
 
-# Manager class used to manage the SFS's database
 class DatabaseManager:
     
     # Constructor
-    def __init__(self):
-        self.engine = sqlalchemy.create_engine("sqlite:///test_data.db")
+    def __init__(self, databasefile):
+        self.engine = sqlalchemy.create_engine("sqlite:///" + databasefile)
         self.session = sqlalchemy.orm.Session(self.engine)
 
     # Create tables in empty database
@@ -81,6 +82,12 @@ class DatabaseManager:
                                                                             == username)
         passwordRec = self.session.execute(passwordSt).first()[0]
         return bcrypt.checkpw(password.encode('utf-8'), passwordRec)
+    
+    def get_user_home_directory(self, user):
+        for file in user.owned_files:
+            if file.is_home_dir:
+                return file
+        return None
             
     def create_group_in_database(self, groupname):
         newGroup = database_models.Group(group_id=groupname)
@@ -115,10 +122,11 @@ class DatabaseManager:
 
     def remove_user_from_group(self, user, group):
         if user not in group.users:
-            return
+            return False
         group.users.remove(user)
         self.configure_remove_user_from_group_permissions(user, group)
         self.session.commit()
+        return True
 
     def configure_remove_user_from_group_permissions(self, user, group):
         for group_user in group.users:
@@ -206,14 +214,10 @@ class DatabaseManager:
                 return True
             elif new_mode == "ALL":
                 users = sqlalchemy.select(database_models.User)
-                if file.owner.group != None:
-                    for user in self.session.scalars(users):
-                        self.grant_access_permissions(file, user)
-                        self.grant_rw_permissions(file, user)
                 for user in self.session.scalars(users):
-                    if file.owner.group != None and user not in file.owner.group.users:
+                    if file.owner.group == None or user not in file.owner.group.users:
                         self.grant_access_permissions(file, user)
-                        self.grant_rw_permissions(file, user)
+                    self.grant_rw_permissions(file, user)
                 file.permission_mode = new_mode
                 self.session.commit()
                 return True

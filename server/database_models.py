@@ -32,7 +32,7 @@ class User(Base):
     password = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     group_id = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("GROUP_DATA.group_id"))
     group = sqlorm.relationship("Group", back_populates="users")
-    owned_files = sqlorm.relationship("File", back_populates="owner")
+    owned_files = sqlorm.relationship("File", back_populates="owner", cascade="all, delete")
     rw_files = sqlorm.relationship("File", secondary=rw_association_table,
                                            back_populates="rw_users")
     access_files = sqlorm.relationship("File", secondary=access_association_table,
@@ -53,7 +53,9 @@ class File(Base):
     is_dir = sqlalchemy.Column(sqlalchemy.Boolean)
     is_home_dir = sqlalchemy.Column(sqlalchemy.Boolean)
     # NULL if home dir of user
-    parent_dir = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("FILE_DATA.abs_path"))
+    parent_dir = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("FILE_DATA.abs_path", 
+                                                      ondelete="CASCADE",
+                                                      onupdate="CASCADE"))
     owner_id = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey("USER_DATA.user_id"))
     owner = sqlorm.relationship("User", back_populates="owned_files")
     rw_users = sqlorm.relationship("User",secondary=rw_association_table,
