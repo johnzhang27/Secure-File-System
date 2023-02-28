@@ -14,7 +14,7 @@ class FileManager:
     # fileName = '1.txt'
 
     def __init__(self):
-        self.relative_path = '\\home'
+        self.relative_path = '/home'
         if (os.path.exists('home_dir')):
             os.chdir('home_dir')
         else:
@@ -217,16 +217,16 @@ class FileManager:
         Returns: decrypted contents
         """
 
-        print('11')
+        # print('11')
         file_list = self.getFileListInCurrentDir(complete_file_dic)
-        print('22')
+        # print('22')
         contents = ''
         for f in file_list.keys():
             tmp = self.DecryptFileName(file_list[f][1],file_list[f][0])
             if tmp == fileName:
                 contents = self.DecryptFile(file_list[f][1],file_list[f][0])
-        print('33')
-        print(contents)
+        # print('33')
+        # print(contents)
         return contents
 
 
@@ -332,17 +332,17 @@ class FileManager:
         """
         if (path == '../'):
             try:
-                if self.relative_path == '\\home':
+                if self.relative_path == '/home':
                     return
                 else:
                     os.chdir("..")
-                    s_list = self.relative_path.split("\\")
+                    s_list = self.relative_path.split("/")
 
                     # Remove the last element of the list
                     s_list = s_list[:-1]
 
                     # Join the list back into a string using the '/' character
-                    new_s = "\\".join(s_list)
+                    new_s = "/".join(s_list)
 
                     self.relative_path = new_s
                     self.current_path = os.getcwd()
@@ -354,7 +354,7 @@ class FileManager:
                 print("change directory")
                 os.chdir(lookup_table_v2[path])
                 self.current_path = os.getcwd()
-                self.relative_path = self.relative_path + '\\' + path
+                self.relative_path = self.relative_path + '/' + path
             except OSError as error: 
                 print(error)
 
@@ -428,7 +428,7 @@ class FileManager:
 
     def resetToHomePath(self):
         self.current_path = self.home_path
-        self.relative_path = "\\home"
+        self.relative_path = "/home"
         os.chdir(self.current_path)
 
     # https://stackoverflow.com/questions/185936/how-to-delete-the-contents-of-a-folder

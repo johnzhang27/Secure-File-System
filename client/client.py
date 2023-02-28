@@ -43,9 +43,6 @@ class Client:
 
         # wait for response
         res_ = self.__s.recv(2048).decode()
-        # print(res_)
-        # parse message
-        # ack_, errorMsg_ = self.__parseMsg(res_)
         print(res_)
 
         return res_
@@ -73,15 +70,11 @@ class Client:
             self.__s.send(tmp_string.encode())
 
             res_ = self.__s.recv(2048).decode()
-            # print(res_)
-            # parse message
-            # ack_, errorMsg_ = self.__parseMsg(res_)
             print(res_)
 
         except Exception as err:
             print ("Error: %s %s" %(fileName, err))
 
-        # print(self.__look_up_table)
         return
 
     def __parseCommand(self, command):
@@ -96,15 +89,11 @@ class Client:
             self.__s.send(tmp_string.encode())
 
             res_ = self.__s.recv(2048).decode()
-            # print(res_)
-            # parse message
-            # ack_, errorMsg_ = self.__parseMsg(res_)
             print(res_)
 
         except Exception as err:
             print ("Error: %s %s" %(fileName, err))
 
-        # print(self.__look_up_table)
         return
 
     def __addFileContents(self, fileName, contents):
@@ -116,13 +105,11 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            # ack_, errorMsg_ = self.__parseMsg(res_)
             print(res_)
 
         except Exception as err:
             print ("Error: %s %s" %(fileName, err))
 
-        # print(self.__look_up_table)
         return
 
     def __generateIntegrityCode(self, filename):
@@ -159,7 +146,6 @@ class Client:
         except Exception as err:
             print ("Error: %s %s" %(directoryName, err))
 
-        # print(self.__look_up_table)
         return
 
     def __changeDirectory(self, directoryName):
@@ -171,11 +157,7 @@ class Client:
 
             res_ = self.__s.recv(2048).decode()
             
-            # ack_, errorMsg_ = self.__parseMsg(res_)
             print(res_)
-            # if success, update the current directory
-            # if (not ack_):
-            #     self.__current_dir  = errorMsg_
 
         except Exception as err:
             print ("Error: %s %s" %(directoryName, err))
@@ -247,24 +229,9 @@ class Client:
 
         return
     
-
-    def __removePermission(self, targetUsername, fileName):
-        try:
-            tmp_string = "10 {} {}".format(targetUsername, fileName)
-            self.__s.send(tmp_string.encode())
-
-            res_ = self.__s.recv(2048).decode()
-            
-            # ack_, errorMsg_ = self.__parseMsg(res_)
-            print(res_)
-
-        except Exception as err:
-            print ("Error: %s" %(err))
-
-        return
     
     def __exit(self):
-        tmp_string = "12"
+        tmp_string = "11"
         self.__s.send(tmp_string.encode())
 
         res_ = self.__s.recv(2048).decode()
@@ -273,7 +240,7 @@ class Client:
         print(res_)
 
     def __delete(self, fileName):
-        tmp_string = "11 {}".format(fileName)
+        tmp_string = "10 {}".format(fileName)
         self.__s.send(tmp_string.encode())
 
         res_ = self.__s.recv(2048).decode()
@@ -282,7 +249,7 @@ class Client:
         print(res_)
 
     def __createGroup(self, groupName):
-        tmp_string = "13 {}".format(groupName)
+        tmp_string = "12 {}".format(groupName)
         self.__s.send(tmp_string.encode())
 
         res_ = self.__s.recv(2048).decode()
@@ -291,7 +258,7 @@ class Client:
         print(res_)
 
     def __addToGroup(self, userName, groupName):
-        tmp_string = "14 {} {}".format(userName, groupName)
+        tmp_string = "13 {} {}".format(userName, groupName)
         self.__s.send(tmp_string.encode())
 
         res_ = self.__s.recv(2048).decode()
@@ -300,53 +267,49 @@ class Client:
         print(res_)
     # command dispatcher
     def __dispatchCommand(self, commandArray):
-        match commandArray[0]:
-            case "create": 
-                print("Receive Creating File Command")
-                self.__createFile(commandArray[1])
-            case "cat":
-                print("Receive Displaying File Command")
-                self.__displayFileContents(commandArray[1])
-            case "echo":
-                print("Receive Echo Command")
-                self.__addFileContents(commandArray[1], ' '.join(commandArray[2:]))
-            # case "verify":
-            #     print("Receive Verify Command")
-            #     self.__generateIntegrityCode(commandArray[1])
-            case "mkdir":
-                print("Receive Mkdir Command")
-                self.__createDirectory(commandArray[1])
-            case "cd":
-                print("Receive Cd Command")
-                self.__changeDirectory(commandArray[1])
+        if commandArray[0] == "create": 
+            print("Receive Creating File Command")
+            self.__createFile(commandArray[1])
+        elif commandArray[0] == "cat":
+            print("Receive Displaying File Command")
+            self.__displayFileContents(commandArray[1])
+        elif commandArray[0] == "echo":
+            print("Receive Echo Command")
+            self.__addFileContents(commandArray[1], ' '.join(commandArray[2:]))
+        # case "verify":
+        #     print("Receive Verify Command")
+        #     self.__generateIntegrityCode(commandArray[1])
+        elif commandArray[0] == "mkdir":
+            print("Receive Mkdir Command")
+            self.__createDirectory(commandArray[1])
+        elif commandArray[0] == "cd":
+            print("Receive Cd Command")
+            self.__changeDirectory(commandArray[1])
 
-            case "pwd":
-                print("Receive Pwd Command")
-                self.__showCurrentDirectory()
+        elif commandArray[0] == "ls":
+            self.__listDir()
+        elif commandArray[0] == "del":
+            self.__delete(commandArray[1])
+        elif commandArray[0] == "exit":
+            self.__exit()
+            print("Exit the SFS.")
+            return 0
+        elif commandArray[0] == "rename":
+            self.__rename(commandArray[1], commandArray[2])
 
-            case "ls":
-                self.__listDir()
-            case "del":
-                self.__delete(commandArray[1])
-            case "exit":
-                self.__exit()
-                print("Exit the SFS.")
-                return 0
-            case "rename":
-                self.__rename(commandArray[1], commandArray[2])
+        elif commandArray[0] == "givep":
+            self.__givePermission(commandArray[1], commandArray[2])
 
-            case "givep":
-                self.__givePermission(commandArray[1], commandArray[2])
+        # case "removep":
+        #     self.__removePermission(commandArray[1], commandArray[2])
 
-            case "removep":
-                self.__removePermission(commandArray[1], commandArray[2])
-
-            case "createG":
-                self.__createGroup(commandArray[1])
-            case "add2G":
-                self.__addToGroup(commandArray[1], commandArray[2])
-            case __:
-                print("Not a valid command, please try again.")
+        # group creation should happen on server side
+        # elif commandArray[0] == "createG":
+        #     self.__createGroup(commandArray[1])
+        # elif commandArray[0] == "add2G":
+        #     self.__addToGroup(commandArray[1], commandArray[2])
+        elif commandArray[0] == __:
+            print("Not a valid command, please try again.")
         return 1
 
 
@@ -379,37 +342,6 @@ class Client:
             # if login succeed, break the while loop
             if(login[0] == '1'):
                 break
-        
-        # # group_ = 1
-        # # # TODO after login, we should initialize an user instance here.
-        # # U = User(username_, password_, group_)
-
-        # # TODO after the user login, we need to check to see if any file is modified outside the SFS
-        # file_list_ = self.__getFileList(U.getUsername())
-        # full_path_list_ = self.__getFullPathList(U.getUsername())
-
-        # if file_list_ != '0':
-        #     tmp_file_list_ = self.__parseCommand(file_list_)
-        #     tmp_full_path_list_ = self.__parseCommand(full_path_list_)
-
-        #     # They have to be in same order
-        #     U.setFilelist(tmp_file_list_)
-        #     U.setPathlist(tmp_full_path_list_)
-
-        #     # print(self.__user.getFilelist()) 
-
-        #     #TODO iterate over the file list and decrypt every single file, if the file is modified, raise an error message
-
-        #     for (file, path) in zip(self.__user.getFilelist(), self.__user.getPathlist()):
-        #         # if we can't decrypt the file then it means someone has modified the content.
-        #         # print("I'm here")
-
-        #         self.__DecryptFile(file, path)
-        #         # print("I'm here2")
-        #         tmp_real_name = self.__DecryptFileName(file, path)
-                
-        #         self.__look_up_table[(tmp_real_name.decode(), path)] = file
-        #     print(self.__look_up_table)
 
         while(1):
             command_ = input("Please Enter Command (Enter 'help' to show a list of available commands): ")
