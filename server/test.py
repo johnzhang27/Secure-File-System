@@ -448,7 +448,7 @@ def renameFile(old_file_name, new_file_name):
         return "Cannot rename home directory of user"
     outparams = file_manager.renameFile_public(old_file_name, lookup_table, new_file_name)
     if (fileObj.is_dir):
-        file_name_hash = file_manager.generateIntegrityCodeForDirectory(outparams[0])        
+        file_name_hash = file_manager.generateIntergityCodeForDirectory(outparams[0])        
     else:
         file_name_hash, file_hash =  file_manager.generateIntegrityCode(outparams[0], outparams[0])
     db.rename_file(fileObj, outparams[2], outparams[0], file_name_hash)  
