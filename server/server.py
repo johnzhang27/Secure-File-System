@@ -401,6 +401,8 @@ class Server:
                 returnStr += self.file_manager.DecryptFileName(enc_file_list[enc_file][1], enc_file_list[enc_file][0]) + "\n"
             else:
                 returnStr += enc_file_list[enc_file][1] + "\n"
+        if(returnStr[:-1] == ''):
+            return ' '
         return returnStr[:-1] 
     
     def renameFile(self, old_file_name, new_file_name):

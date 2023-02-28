@@ -248,23 +248,23 @@ class Client:
         return
     
 
-    def __removePermission(self, targetUsername, fileName):
-        try:
-            tmp_string = "10 {} {}".format(targetUsername, fileName)
-            self.__s.send(tmp_string.encode())
+    # def __removePermission(self, targetUsername, fileName):
+    #     try:
+    #         tmp_string = "10 {} {}".format(targetUsername, fileName)
+    #         self.__s.send(tmp_string.encode())
 
-            res_ = self.__s.recv(2048).decode()
+    #         res_ = self.__s.recv(2048).decode()
             
-            # ack_, errorMsg_ = self.__parseMsg(res_)
-            print(res_)
+    #         # ack_, errorMsg_ = self.__parseMsg(res_)
+    #         print(res_)
 
-        except Exception as err:
-            print ("Error: %s" %(err))
+    #     except Exception as err:
+    #         print ("Error: %s" %(err))
 
-        return
+    #     return
     
     def __exit(self):
-        tmp_string = "12"
+        tmp_string = "11"
         self.__s.send(tmp_string.encode())
 
         res_ = self.__s.recv(2048).decode()
@@ -273,7 +273,7 @@ class Client:
         print(res_)
 
     def __delete(self, fileName):
-        tmp_string = "11 {}".format(fileName)
+        tmp_string = "10 {}".format(fileName)
         self.__s.send(tmp_string.encode())
 
         res_ = self.__s.recv(2048).decode()
@@ -282,7 +282,7 @@ class Client:
         print(res_)
 
     def __createGroup(self, groupName):
-        tmp_string = "13 {}".format(groupName)
+        tmp_string = "12 {}".format(groupName)
         self.__s.send(tmp_string.encode())
 
         res_ = self.__s.recv(2048).decode()
@@ -291,7 +291,7 @@ class Client:
         print(res_)
 
     def __addToGroup(self, userName, groupName):
-        tmp_string = "14 {} {}".format(userName, groupName)
+        tmp_string = "13 {} {}".format(userName, groupName)
         self.__s.send(tmp_string.encode())
 
         res_ = self.__s.recv(2048).decode()
@@ -338,8 +338,8 @@ class Client:
             case "givep":
                 self.__givePermission(commandArray[1], commandArray[2])
 
-            case "removep":
-                self.__removePermission(commandArray[1], commandArray[2])
+            # case "removep":
+            #     self.__removePermission(commandArray[1], commandArray[2])
 
             case "createG":
                 self.__createGroup(commandArray[1])
