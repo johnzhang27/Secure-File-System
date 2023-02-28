@@ -300,53 +300,48 @@ class Client:
         print(res_)
     # command dispatcher
     def __dispatchCommand(self, commandArray):
-        match commandArray[0]:
-            case "create": 
-                print("Receive Creating File Command")
-                self.__createFile(commandArray[1])
-            case "cat":
-                print("Receive Displaying File Command")
-                self.__displayFileContents(commandArray[1])
-            case "echo":
-                print("Receive Echo Command")
-                self.__addFileContents(commandArray[1], ' '.join(commandArray[2:]))
-            # case "verify":
-            #     print("Receive Verify Command")
-            #     self.__generateIntegrityCode(commandArray[1])
-            case "mkdir":
-                print("Receive Mkdir Command")
-                self.__createDirectory(commandArray[1])
-            case "cd":
-                print("Receive Cd Command")
-                self.__changeDirectory(commandArray[1])
+        if commandArray[0] == "create": 
+            print("Receive Creating File Command")
+            self.__createFile(commandArray[1])
+        elif commandArray[0] == "cat":
+            print("Receive Displaying File Command")
+            self.__displayFileContents(commandArray[1])
+        elif commandArray[0] == "echo":
+            print("Receive Echo Command")
+            self.__addFileContents(commandArray[1], ' '.join(commandArray[2:]))
+        # case "verify":
+        #     print("Receive Verify Command")
+        #     self.__generateIntegrityCode(commandArray[1])
+        elif commandArray[0] == "mkdir":
+            print("Receive Mkdir Command")
+            self.__createDirectory(commandArray[1])
+        elif commandArray[0] == "cd":
+            print("Receive Cd Command")
+            self.__changeDirectory(commandArray[1])
 
-            case "pwd":
-                print("Receive Pwd Command")
-                self.__showCurrentDirectory()
+        elif commandArray[0] == "ls":
+            self.__listDir()
+        elif commandArray[0] == "del":
+            self.__delete(commandArray[1])
+        elif commandArray[0] == "exit":
+            self.__exit()
+            print("Exit the SFS.")
+            return 0
+        elif commandArray[0] == "rename":
+            self.__rename(commandArray[1], commandArray[2])
 
-            case "ls":
-                self.__listDir()
-            case "del":
-                self.__delete(commandArray[1])
-            case "exit":
-                self.__exit()
-                print("Exit the SFS.")
-                return 0
-            case "rename":
-                self.__rename(commandArray[1], commandArray[2])
+        elif commandArray[0] == "givep":
+            self.__givePermission(commandArray[1], commandArray[2])
 
-            case "givep":
-                self.__givePermission(commandArray[1], commandArray[2])
+        # case "removep":
+        #     self.__removePermission(commandArray[1], commandArray[2])
 
-            # case "removep":
-            #     self.__removePermission(commandArray[1], commandArray[2])
-
-            case "createG":
-                self.__createGroup(commandArray[1])
-            case "add2G":
-                self.__addToGroup(commandArray[1], commandArray[2])
-            case __:
-                print("Not a valid command, please try again.")
+        elif commandArray[0] == "createG":
+            self.__createGroup(commandArray[1])
+        elif commandArray[0] == "add2G":
+            self.__addToGroup(commandArray[1], commandArray[2])
+        elif commandArray[0] == __:
+            print("Not a valid command, please try again.")
         return 1
 
 
