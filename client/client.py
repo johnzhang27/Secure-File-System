@@ -93,15 +93,6 @@ class Client:
 
         return
 
-    def __generateIntegrityCode(self, filename):
-        
-        integrity_filename = hashlib.md5(filename.encode()).hexdigest()
-        with open(filename, 'rb') as ff:
-            data = ff.read()    
-            integrity_content = hashlib.md5(data).hexdigest()
-
-        return integrity_filename, integrity_content
-
     def __createDirectory(self, directoryName):
         # for 'mkdir' command
         print("Start creating directory...")
@@ -251,6 +242,18 @@ class Client:
         elif commandArray[0] == "givep":
             self.__givePermission(commandArray[1], commandArray[2])
 
+
+        elif commandArray[0] == "help":
+            print("[create #filename] for create a new file")
+            print("[cat #filename] for display a file")
+            print("[echo #filename] for add contents to a file")
+            print("[mkdir #directoryName] for create a new directory")
+            print("[cd #directoryName] for change directory")
+            print("[ls] for list all files and directory in current directory")
+            print("[del #filename] for delete a file")
+            print("[exit] for exit SFS")
+            print("[rename #filename] for rename a file")
+            print("[givep #filename #permission]for change permission")
         else:
             print("Not a valid command, please try again.")
         return 1
