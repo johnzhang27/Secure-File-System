@@ -16,16 +16,11 @@ class Client:
     __host = ""
     __port = -1
     __s = None
-    __key = ''
-    __current_dir = '/home'
-    __user = None
-    __look_up_table = {}
 
     def __init__(self, host = HOST, port = PORT):
         print("Setting up client")
         self.__host = host
         self.__port = port
-        self.__current_dir = '/home'
         try:
             self.__s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.__s.connect((self.__host, self.__port))
@@ -46,20 +41,6 @@ class Client:
         print(res_)
 
         return res_
-
-    def __parseMsg(self, msg):
-        # TODO I need to receive and return the group ID
-        tmp_array = msg.split()
-        if len(tmp_array) != 3:
-            print("invalid response")
-            return
-        ack = 0
-        try:
-            ack = int(tmp_array[0])
-        except ValueError:
-            print("invalid response")
-            return
-        return ack, tmp_array[1], tmp_array[2]
 
 
     def __createFile(self, fileName):
@@ -111,25 +92,6 @@ class Client:
             print ("Error: %s %s" %(fileName, err))
 
         return
-
-    def __generateIntegrityCode(self, filename):
-        
-        integrity_filename = hashlib.md5(filename.encode()).hexdigest()
-        with open(filename, 'rb') as ff:
-            data = ff.read()    
-            integrity_content = hashlib.md5(data).hexdigest()
-
-        return integrity_filename, integrity_content
-    
-    def __verifyIntegrityCode(self, filename, integrity_filename, integrity_content):
-        code1, code2 = self.__generateIntegrityCode(filename)
-
-        if code1 == integrity_filename and code2 == integrity_content:
-            return True
-
-        else:
-            return False
-
 
     def __createDirectory(self, directoryName):
         # for 'mkdir' command
@@ -248,23 +210,6 @@ class Client:
         # ack_, errorMsg_ = self.__parseMsg(res_)
         print(res_)
 
-    def __createGroup(self, groupName):
-        tmp_string = "12 {}".format(groupName)
-        self.__s.send(tmp_string.encode())
-
-        res_ = self.__s.recv(2048).decode()
-        
-        # ack_, errorMsg_ = self.__parseMsg(res_)
-        print(res_)
-
-    def __addToGroup(self, userName, groupName):
-        tmp_string = "13 {} {}".format(userName, groupName)
-        self.__s.send(tmp_string.encode())
-
-        res_ = self.__s.recv(2048).decode()
-        
-        # ack_, errorMsg_ = self.__parseMsg(res_)
-        print(res_)
     # command dispatcher
     def __dispatchCommand(self, commandArray):
         if commandArray[0] == "create": 
@@ -276,9 +221,6 @@ class Client:
         elif commandArray[0] == "echo":
             print("Receive Echo Command")
             self.__addFileContents(commandArray[1], ' '.join(commandArray[2:]))
-        # case "verify":
-        #     print("Receive Verify Command")
-        #     self.__generateIntegrityCode(commandArray[1])
         elif commandArray[0] == "mkdir":
             print("Receive Mkdir Command")
             self.__createDirectory(commandArray[1])
@@ -300,15 +242,19 @@ class Client:
         elif commandArray[0] == "givep":
             self.__givePermission(commandArray[1], commandArray[2])
 
-        # case "removep":
-        #     self.__removePermission(commandArray[1], commandArray[2])
 
-        # group creation should happen on server side
-        # elif commandArray[0] == "createG":
-        #     self.__createGroup(commandArray[1])
-        # elif commandArray[0] == "add2G":
-        #     self.__addToGroup(commandArray[1], commandArray[2])
-        elif commandArray[0] == __:
+        elif commandArray[0] == "help":
+            print("[create #filename] for create a new file")
+            print("[cat #filename] for display a file")
+            print("[echo #filename] for add contents to a file")
+            print("[mkdir #directoryName] for create a new directory")
+            print("[cd #directoryName] for change directory")
+            print("[ls] for list all files and directory in current directory")
+            print("[del #filename] for delete a file")
+            print("[exit] for exit SFS")
+            print("[rename #filename] for rename a file")
+            print("[givep #filename #permission]for change permission")
+        else:
             print("Not a valid command, please try again.")
         return 1
 
